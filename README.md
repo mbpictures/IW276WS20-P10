@@ -13,7 +13,7 @@ Short introduction to project assigment.
 
 * [Requirements](#requirements)
 * [Prerequisites](#prerequisites)
-* [Pre-trained model](#pre-trained-model)
+* [Pre-trained model](#pre-trained-models)
 * [Running](#running)
 * [Acknowledgments](#acknowledgments)
 
