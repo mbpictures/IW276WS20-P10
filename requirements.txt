@@ -1,6 +1,0 @@
-# pip3 install -U -r requirements.txt
-numpy
-tqdm
-opencv-python
-pandas
-pycocotools
