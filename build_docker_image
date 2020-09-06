@@ -1,0 +1,29 @@
+#!/bin/bash
+
+usage()
+{
+  echo "Usage: $0 [ -n NAME ] [ -t TAG ]" 1>&2 
+}
+exit_abnormal()
+{
+  usage
+  exit 1
+}
+
+NAME='iw276ws20-p10'
+TAG='0.1'
+options='nt'
+while getopts $options option
+do
+   case "$option" in
+   n) NAME=${OPTARG};;
+   t) TAG=${OPTARG};;
+   :) echo "Error: -${OPTARG} requires an argument."
+      exit_abnormal
+      ;;
+   *) exit_abnormal
+      ;;
+   esac
+done
+
+docker build . -t "${NAME}:${TAG}"
