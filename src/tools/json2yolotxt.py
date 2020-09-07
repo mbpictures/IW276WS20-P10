@@ -57,12 +57,11 @@ def convert_labelbox_json(name, file):
 
             # The Labelbox bounding box format is [top left x, top left y, width, height]
             box = np.array(x['bbox'], dtype=np.float64)
-            box[:2] += box[2:] / 2  # xy top-left corner to center
-            box[[0, 2]] /= width[i]  # normalize x
-            box[[1, 3]] /= height[i]  # normalize y
+            box[2] = box[0] + box[2]
+            box[3] = box[1] + box[3]
 
             if (box[2] > 0.) and (box[3] > 0.):  # if w > 0 and h > 0
-                outputAnnot[i] += ' %.6f,%.6f,%.6f,%.6f,%g' % (*box, x['category_id'] - 1)
+                outputAnnot[i] += ' %d,%d,%d,%d,%g' % (*box, x['category_id'] - 1)
 
         for line in outputAnnot.values():
             file.write(line + "\n")
