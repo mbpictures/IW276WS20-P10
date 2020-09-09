@@ -11,7 +11,7 @@ exit_abnormal()
 }
 
 HOST='iw276ws20-p10'
-options='im'
+options='i:m'
 while getopts $options option
 do
    case "$option" in
