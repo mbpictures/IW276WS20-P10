@@ -16,7 +16,7 @@ from pathlib import Path
 
 
 # Convert Labelbox JSON file into YOLO-format labels ---------------------------
-def convert_labelbox_json(name, file):
+def convert_labelbox_json(name, file, darknet):
     # Create folders
     path = make_folders()
 
@@ -51,20 +51,29 @@ def convert_labelbox_json(name, file):
     with open('out/_annotations.txt', 'a') as file:
         for x in tqdm(data['annotations'], desc='Annotations'):
             i = file_id.index(x['image_id'])  # image index
-            label_name = Path(file_name[i]).stem + '.jpg'
+            label_name = Path(file_name[i]).stem + ('.txt' if darknet else '.jpg')
             if i not in outputAnnot:
                 outputAnnot[i] = label_name
 
             # The Labelbox bounding box format is [top left x, top left y, width, height]
             box = np.array(x['bbox'], dtype=np.float64)
-            box[2] = box[0] + box[2]
-            box[3] = box[1] + box[3]
+            if darknet:
+                box[:2] += box[2:] / 2  # xy top-left corner to center
+                box[[0, 2]] /= width[i]  # normalize x
+                box[[1, 3]] /= height[i]  # normalize y
+            else:
+                box[2] = box[0] + box[2]
+                box[3] = box[1] + box[3]
 
             if (box[2] > 0.) and (box[3] > 0.):  # if w > 0 and h > 0
-                outputAnnot[i] += ' %d,%d,%d,%d,%g' % (*box, x['category_id'] - 1)
-
-        for line in outputAnnot.values():
-            file.write(line + "\n")
+                if darknet:
+                    with open(f"out/labels/{label_name}", "a") as fileDarknet:
+                        fileDarknet.write('%g %.6f %.6f %.6f %.6f\n' % (x['category_id'] - 1, *box))
+                else:
+                    outputAnnot[i] += ' %d,%d,%d,%d,%g' % (*box, x['category_id'] - 1)
+        if not darknet:
+            for line in outputAnnot.values():
+                file.write(line + "\n")
 
     # Split data into train, test, and validate files
     split_files(name, file_name)
@@ -85,7 +94,7 @@ def split_files(out_path, file_name, prefix_path=''):  # split training data
     datasets = {'train': i, 'test': j, 'val': k}
     for key, item in datasets.items():
         if item.any():
-            with open(out_path + '_' + key + '.txt', 'a') as file:
+            with open(out_path + '_' + key + '.txt', 'w+') as file:
                 for i in item:
                     file.write('%s%s\n' % (prefix_path, file_name[i]))
 
@@ -103,6 +112,7 @@ def split_indices(x, train=0.9, test=0.1, validate=0.0, shuffle=True):  # split 
 
 if __name__ == '__main__':
     if len(sys.argv) < 3:
-        print("How to use this script: run.py NAME JSON_FILE")
+        print("How to use this script: run.py NAME JSON_FILE -darknet (OPTIONAL)")
     else:
-        convert_labelbox_json(name=sys.argv[1], file=sys.argv[2])
+        toDarknet = len(sys.argv) == 4 and sys.argv[3] == "-darknet"
+        convert_labelbox_json(name=sys.argv[1], file=sys.argv[2], darknet=toDarknet)
