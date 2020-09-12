@@ -1,41 +1,45 @@
-import sys
 import os
 import random
+import argparse
 
 if __name__ == '__main__':
-    if len(sys.argv) <= 3:
-        print("usage: splitInTrainAndValidate.py ANNOTATIONS_FILE|IMAGE_FOLDER OUT_DIR PERCENT_TRAIN(FLOAT) -darknet (OPTIONAL)")
-    
-    else:
-        darknet = len(sys.argv) == 5 and sys.argv[4] == "-darknet"
+    parser = argparse.ArgumentParser("Split a given dataset into training and validation images")
+    parser.add_argument("-path", required=True, type=str, help="Path to annotations file or the image folder (when using the -darknet option)")
+    parser.add_argument("-output", required=True, type=str, help="Output directory")
+    parser.add_argument("-split", required=True, type=float, default=80, help="Amount of training data in percent, e.g. 80")
+    parser.add_argument("-darknet", type=bool, help="Should the output be compatible with the darknet required format?")
 
-        if not os.path.exists(sys.argv[2]): os.mkdir(sys.argv[2])
+    args = parser.parse_args()
 
-        valPath = os.path.join(sys.argv[2], "val.txt")
-        trainPath = os.path.join(sys.argv[2], "train.txt")
+    darknet = args.darknet
 
-        valAmount = 0
-        trainAmount = 0
+    if not os.path.exists(args.output): os.mkdir(args.output)
 
-        with open(valPath, "w+") as val, open(trainPath, "w+") as train:
-            if darknet:
-                for file in os.listdir(sys.argv[1]):
+    valPath = os.path.join(args.output, "val.txt")
+    trainPath = os.path.join(args.output, "train.txt")
+
+    valAmount = 0
+    trainAmount = 0
+
+    with open(valPath, "w+") as val, open(trainPath, "w+") as train:
+        if darknet:
+            for file in os.listdir(args.path):
+                rand = random.random()
+                if rand >= 0 and rand <= float(args.split) / 100:
+                    train.write(os.path.basename(file) + "\n")
+                    trainAmount += 1
+                else:
+                    val.write(os.path.basename(file) + "\n")
+                    valAmount += 1
+        else:
+            with open(args.path, "r") as file:
+                for line in file:
                     rand = random.random()
-                    if rand >= 0 and rand <= float(sys.argv[3]) / 100:
-                        train.write(os.path.basename(file) + "\n")
+                    if rand >= 0 and rand <= float(args.split) / 100:
+                        train.write(line)
                         trainAmount += 1
                     else:
-                        val.write(os.path.basename(file) + "\n")
+                        val.write(line)
                         valAmount += 1
-            else:
-                with open(sys.argv[1], "r") as file:
-                    for line in file:
-                        rand = random.random()
-                        if rand >= 0 and rand <= float(sys.argv[3]) / 100:
-                            train.write(line)
-                            trainAmount += 1
-                        else:
-                            val.write(line)
-                            valAmount += 1
 
-        print(f"Saved splits (Training: {float(sys.argv[3])}%):\nTrain: {trainPath} Amount: {trainAmount}\nValidate:{valPath} Amount: {valAmount}")
+    print(f"Saved splits (Training: {float(args.split)}%):\nTrain: {trainPath} Amount: {trainAmount}\nValidate:{valPath} Amount: {valAmount}")

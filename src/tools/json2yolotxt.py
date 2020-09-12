@@ -13,6 +13,7 @@ from tqdm import tqdm
 import numpy as np
 import shutil
 from pathlib import Path
+import argparse
 
 
 # Convert Labelbox JSON file into YOLO-format labels ---------------------------
@@ -111,8 +112,11 @@ def split_indices(x, train=0.9, test=0.1, validate=0.0, shuffle=True):  # split 
     return v[:i], v[i:j], v[j:k]  # return indices
 
 if __name__ == '__main__':
-    if len(sys.argv) < 3:
-        print("How to use this script: run.py NAME JSON_FILE -darknet (OPTIONAL)")
-    else:
-        toDarknet = len(sys.argv) == 4 and sys.argv[3] == "-darknet"
-        convert_labelbox_json(name=sys.argv[1], file=sys.argv[2], darknet=toDarknet)
+    parser = argparse.ArgumentParser(description="Convert COCOJSON format to yolo txt format.")
+    parser.add_argument("-name", required=True, type=str, help="file name")
+    parser.add_argument("-json", required=True, type=str, help="json file to convert")
+    parser.add_argument("-darknet", type=bool, help="should the txt files be compatible with the darknet format?")
+
+    args = parser.parse_args()
+
+    convert_labelbox_json(name=args.name, file=args.file, darknet=args.darknet)
