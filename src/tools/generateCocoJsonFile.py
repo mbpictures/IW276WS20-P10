@@ -36,7 +36,7 @@ Layout for test data
 """, formatter_class=argparse.RawTextHelpFormatter)
 
     parser.add_argument('personfile', type=str, help='File path to person annotation json file')
-    parser.add_argument('transfered', type=str, help='Directory containing transfered gt files', default='transfered.json')
+    parser.add_argument('transferred', type=str, help='Directory containing transferred gt files', default='transferred.json')
     parser.add_argument('--annType', type=str, help='annotation type', default='bbox')
     parser.add_argument('--maxDets', type=list, help='[10, 100, 500] M = 3 thresholds on max detections per image',
                         default=[10, 100, 500])
@@ -166,4 +166,4 @@ if __name__ == '__main__':
     args = parse_args()
 
     # transfer ground truth to COCO format
-    generate_coco_anno(args.personfile, args.transfered)
+    generate_coco_anno(args.personfile, args.transferred)
