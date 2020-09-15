@@ -11,18 +11,23 @@ exit_abnormal()
 }
 
 HOST='iw276ws20-p10'
-options='i:m'
+TAG='0.1'
+DIRECTORY=''
+options=':imh'
 while getopts $options option
 do
-   case "$option" in
-   i) HOST=${OPTARG};;
-   m) DIRECTORY=-v ${OPTARG};;
-   :) echo "Error: -${OPTARG} requires an argument."
+   case "${option}" in
+   (h) usage
+      exit 0
+      ;;
+   (i) HOST="${OPTARG}";;
+   (m) DIRECTORY="-v ${OPTARG}";;
+   (:) echo "Error: -${OPTARG} requires an argument."
       exit_abnormal
       ;;
-   *) exit_abnormal
+   (*) exit_abnormal
       ;;
    esac
 done
 
-docker run -it --rm --runtime nvidia --network host ${DIRECTORY} ${HOST}
+docker run -it --rm --runtime nvidia --network host ${DIRECTORY} ${HOST}:${TAG}
