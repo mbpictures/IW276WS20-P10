@@ -1,0 +1,17 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "args":["--video", "/home/p10/Videos/rus.mp4", "-m", "yolov4-416", "-c", "1"],
+            "console": "integratedTerminal"
+        }
+    ]
+}
+//python3 trt_yolo.py --video /home/p10/Videos/rus.mp4 -c 1 -m yolov4-416
