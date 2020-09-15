@@ -56,8 +56,9 @@ def loop_and_detect(cam, trt_yolo, conf_th, vis):
     fps = 0.0
     tic = time.time()
     while True:
-        if (cv2.getWindowProperty(WINDOW_NAME, 0) < 0) and ACTIVATE_DISPLAY:
-            break
+        if ACTIVATE_DISPLAY:
+            if (cv2.getWindowProperty(WINDOW_NAME, 0) < 0):
+                break
         img = cam.read()
         if img is None:
             break
