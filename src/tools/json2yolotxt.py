@@ -17,7 +17,7 @@ import argparse
 
 
 # Convert Labelbox JSON file into YOLO-format labels ---------------------------
-def convert_labelbox_json(name, file, darknet):
+def convert_labelbox_json(name, file, darknet, filter):
     # Create folders
     path = make_folders()
 
@@ -43,7 +43,10 @@ def convert_labelbox_json(name, file, darknet):
             file.write('%g, %g\n' % (x['width'], x['height']))
 
     # Write *.names file
+    categories = []
     for x in tqdm(data['categories'], desc='Names'):
+        if x["name"] in filter: continue
+        categories.append(x["name"])
         with open(name + '.names', 'a') as file:
             file.write('%s\n' % x['name'])
 
@@ -67,7 +70,7 @@ def convert_labelbox_json(name, file, darknet):
                 box[3] = box[1] + box[3]
 
             if (box[2] > 0.) and (box[3] > 0.):  # if w > 0 and h > 0
-                if darknet:
+                if darknet and len(categories) > int(x['category_id'] - 1) and categories[int(x['category_id'] - 1)] not in filter:
                     with open(f"out/labels/{label_name}", "a") as fileDarknet:
                         fileDarknet.write('%g %.6f %.6f %.6f %.6f\n' % (x['category_id'] - 1, *box))
                 else:
@@ -116,7 +119,8 @@ if __name__ == '__main__':
     parser.add_argument("-name", required=True, type=str, help="file name")
     parser.add_argument("-json", required=True, type=str, help="json file to convert")
     parser.add_argument("-darknet", type=bool, help="should the txt files be compatible with the darknet format?")
+    parser.add_argument("-filter-categories", type=str, nargs="*", help="Filter categories in dataset. Expects indexes")
 
     args = parser.parse_args()
 
-    convert_labelbox_json(name=args.name, file=args.file, darknet=args.darknet)
+    convert_labelbox_json(name=args.name, file=args.json, darknet=args.darknet, filter=args.filter_categories)
