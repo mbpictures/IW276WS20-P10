@@ -7,7 +7,7 @@ Short introduction to project assigment.
   Link to Demo Video
 </p>
 
-> This work was done by Autor 1, Autor2, Autor 3 during the IW276 Autonome Systeme Labor at the Karlsruhe University of Applied Sciences (Hochschule Karlruhe - Technik und Wirtschaft) in WS 2020 / 2021. 
+> This work was done by Marius Butz, Tim Hänlein and Valeria Zitz during the IW276 Autonome Systeme Labor at the Karlsruhe University of Applied Sciences (Hochschule Karlruhe - Technik und Wirtschaft) in WS 2020 / 2021. 
 
 ## Table of Contents
 
@@ -35,12 +35,22 @@ pip install -r requirements.txt
 Pre-trained model is available at pretrained-models/
 
 ## Running
+1. Clone the repository
+> git clone https://github.com/IW276/IW276WS20-P10.git
+2. Build the docker image
+> cd IW276WS20-P10/
 
-To run the demo, pass path to the pre-trained checkpoint and camera id (or path to video file):
-```
-python src/demo.py --model model/student-jetson-model.pth --video 0
-```
-> Additional comment about the demo.
+> sudo ./build_docker_image
+3. Start the docker container (consider passing a mounting directory for images/videos with -v source:destination)
+> sudo docker run -it --rm --runtime nvidia --network host iw276ws20-p10:0.1
+4. Start the TensorRT demo
+> cd IW276WS20-P10/src/tensorrt_demos/
+
+> python3 trt_yolo.py --image /home/Pictures/some_picture.jpg -m yolov4-416
+
+or
+
+> python3 trt_yolo.py --video /home/Videos/some_video.mp4 -m yolov4-416
 
 ## Docker
 HOW TO
@@ -48,8 +58,7 @@ HOW TO
 ## Acknowledgments
 
 This repo is based on
-  - [Source 1](https://github.com/)
-  - [Source 2](https://github.com/)
+  - [tensorrt_demos](https://github.com/jkjung-avt/tensorrt_demos)
 
 Thanks to the original authors for their work!
 
