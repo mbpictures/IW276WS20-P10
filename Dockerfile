@@ -6,45 +6,43 @@ RUN nvcc --version
 COPY  /docker-requirements/nvidia-l4t-apt-source.list /etc/apt/sources.list.d/nvidia-l4t-apt-source.list
 COPY  /docker-requirements/jetson-ota-public.asc /etc/apt/trusted.gpg.d/jetson-ota-public.asc
 
-# Clone the P10-repo master
-#RUN cd home && \
-#        git clone https://github.com/IW276/IW276WS20-P10.git
-WORKDIR /home/IW276WS20-P10
-COPY . .
-
-RUN pip3 install -U \
-        pip \
-        setuptools \
-        wheel && \
-    pip3 install \
-        -r requirements.txt \
-         && \
-    rm -rf ~/.cache/pip
-
-#RUN cd /home && \
-#        git clone https://github.com/jkjung-avt/tensorrt_demos.git
-
-WORKDIR /home/IW276WS20-P10/demos/tensorrt_demos
-
-RUN pip3 install -U protobuf
-
 RUN apt-get update && \ 
-    apt-get install -y cmake libopencv-python libboost-python-dev libboost-thread-dev && \
+    apt-get install -y libopencv-python libboost-python-dev libboost-thread-dev && \
     apt-get install -y --no-install-recommends \
           python3-pip \
           python3-dev \
           build-essential \
           zlib1g-dev \
           zip \
-          libjpeg8-dev && rm -rf /var/lib/apt/lists/*
+          libjpeg8-dev && \ 
+    rm -rf /var/lib/apt/lists/*
 
-# TODO: Copy pycuda, instead of installing it 
+# Do not change order!
+RUN pip3 install -U setuptools Cython wheel 
+RUN pip3 install numpy
+
+RUN apt-get update && \ 
+    apt-get install -y cmake libprotoc-dev libprotobuf-dev protobuf-compiler
+
+RUN pip3 install -U \
+        pip \
+        setuptools \
+        Cython \ 
+        wheel \
+        protobuf \ 
+        onnx==1.4.1
+
+# Copy IW276WS20-P10 into docker
+WORKDIR /home/IW276WS20-P10
+COPY . .
+
+WORKDIR /home/IW276WS20-P10/src/tensorrt_demos
+
+# Install pycuda 
 RUN cd ssd && \
     ./install_pycuda.sh
 
-# TODO: Fix onnx error
-RUN pip3 install onnx==1.4.1
-
+# Should already be built. Just for 
 RUN cd plugins && \ 
    make
 
