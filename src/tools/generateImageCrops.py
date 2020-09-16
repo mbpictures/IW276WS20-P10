@@ -11,7 +11,7 @@ import argparse
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Crop high res dataset images to lower res cropped images and filter only images containing at least one human")
-    parser.add_argument("directory", required=True, help="Directory in which your dataset is stored (this folder contains an folder called 'image_annos' and 'image_train'")
+    parser.add_argument("directory", help="Directory in which your dataset is stored (this folder contains an folder called 'image_annos' and 'image_train'")
 
     args = parser.parse_args()
 
