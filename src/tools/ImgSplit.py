@@ -18,6 +18,7 @@ class ImgSplit():
                  annomode,
                  outpath,
                  outannofile,
+                 imagedir,
                  code='utf-8',
                  gap=100,
                  subwidth=1000,
@@ -50,9 +51,9 @@ class ImgSplit():
         self.slidewidth = self.subwidth - self.gap
         self.slideheight = self.subheight - self.gap
         self.thresh = thresh
-        self.imagepath = os.path.join(self.basepath, 'image_train')
+        self.imagepath = os.path.join(self.basepath, imagedir)
         self.annopath = os.path.join(self.basepath, 'image_annos', annofile)
-        self.outimagepath = os.path.join(self.outpath, 'image_train')
+        self.outimagepath = os.path.join(self.outpath, imagedir)
         self.outannopath = os.path.join(self.outpath, 'image_annos')
         self.outext = outext
         if not os.path.exists(self.outimagepath):
