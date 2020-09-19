@@ -47,5 +47,8 @@ RUN cd plugins && \
    make
 
 WORKDIR /home/
+RUN mkdir out
+RUN mkdir in
+WORKDIR /home/IW276WS20-P10/src/tensorrt_demos
 
 # ....

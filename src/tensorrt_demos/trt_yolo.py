@@ -8,8 +8,10 @@ TensorRT optimized YOLO engine.
 import os
 import time
 import argparse
-
+import json
+import numpy 
 import cv2
+
 import pycuda.autoinit  # This is needed for initializing CUDA driver
 
 from utils.yolo_classes import get_cls_dict
@@ -22,6 +24,22 @@ from utils.yolo_with_plugins import TrtYOLO
 
 WINDOW_NAME = 'TrtYOLODemo'
 ACTIVATE_DISPLAY = False
+cocoAnnotationId = 1
+cocoImageId = 0
+cocoCategoryId = 0
+cocoJson = dict()
+
+
+class NpEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, numpy.integer):
+            return int(obj)
+        elif isinstance(obj, numpy.floating):
+            return float(obj)
+        elif isinstance(obj, numpy.ndarray):
+            return obj.tolist()
+        else:
+            return super(NpEncoder, self).default(obj)
 
 
 def parse_args():
@@ -43,27 +61,63 @@ def parse_args():
     return args
 
 
-def loop_and_detect(cam, trt_yolo, conf_th, vis):
+def append_coco(boxes, confidences, classes, camera):
+    global cocoImageId
+    global cocoAnnotationId
+    global cocoJson
+    cocoImage = { 
+        'file_name':camera.currentImage,
+        'height':camera.img_height,
+        'width':camera.img_width,
+        'id':cocoImageId
+    }
+
+    for box, confidence, clss in zip(boxes, confidences, classes):
+        classId = int(clss)
+        annotation = {
+            'id':cocoAnnotationId,
+            'bbox':[
+                int(box[0]),
+                int(box[1]),
+                int(box[2]),
+                int(box[3])
+            ] , 
+            'image_id':cocoImageId, 
+            'segmentation':[], 
+            'ignore':0, 
+            'area':(box[2]-box[0]) * (box[3]-box[1]), 
+            'iscrowd':0, 
+            'category_id':classId
+        }
+        cocoJson['annotations'].append(annotation)
+        cocoAnnotationId += 1
+
+    cocoJson['images'].append(cocoImage)
+    cocoImageId += 1
+
+
+def loop_and_detect(camera, trt_yolo, args, confidence_thresh, visual):
     """Continuously capture images from camera and do object detection.
 
     # Arguments
-      cam: the camera instance (video source).
+      camera: the camera instance (video source).
       trt_yolo: the TRT YOLO object detector instance.
-      conf_th: confidence/score threshold for object detection.
-      vis: for visualization.
+      confidence_thresh: confidence/score threshold for object detection.
+      visual: for visualization.
     """
-    full_scrn = False
     fps = 0.0
     tic = time.time()
-    while True:
+    imageWritten = False
+
+    while len(camera.imageNames) != 0:
         if ACTIVATE_DISPLAY:
             if (cv2.getWindowProperty(WINDOW_NAME, 0) < 0):
                 break
-        img = cam.read()
+        img = camera.read()
         if img is None:
             break
-        boxes, confs, clss = trt_yolo.detect(img, conf_th)
-        img = vis.draw_bboxes(img, boxes, confs, clss)
+        boxes, confs, clss = trt_yolo.detect(img, confidence_thresh)
+        img = visual.draw_bboxes(img, boxes, confs, clss)
         img = show_fps(img, fps)
         if ACTIVATE_DISPLAY:
             cv2.imshow(WINDOW_NAME, img)
@@ -76,20 +130,28 @@ def loop_and_detect(cam, trt_yolo, conf_th, vis):
             key = cv2.waitKey(1)
             if key == 27:  # ESC key: quit program
                 break
-            elif key == ord('F') or key == ord('f'):  # Toggle fullscreen
-                full_scrn = not full_scrn
-                set_display(WINDOW_NAME, full_scrn)
-        print("Current fps: ", fps)
-
-
+        print("FPS: {:3.2f} and {} Images left.".format(fps, len(camera.imageNames)))
+        #if not imageWritten:
+        #    cv2.imwrite("/home/Pictures/test.png", img)
+        #    imageWritten = True
+        append_coco(boxes, confs, clss, camera)
+    
+    # Write coco json file when done
+    cocoFile = json.dumps(cocoJson, cls=NpEncoder)
+    f = open("/home/out/cocoFile.json", "w+")
+    f.write(cocoFile)
+    f.close()
+            
 
 def main():
+    global cocoCategoryId
     args = parse_args()
     if args.category_num <= 0:
         raise SystemExit('ERROR: bad category_num (%d)!' % args.category_num)
     if not os.path.isfile('yolo/%s.trt' % args.model):
         raise SystemExit('ERROR: file (yolo/%s.trt) not found!' % args.model)
 
+    # Create camera for video/image input
     cam = Camera(args)
     if not cam.isOpened():
         raise SystemExit('ERROR: failed to open camera!')
@@ -106,6 +168,7 @@ def main():
     if h % 32 != 0 or w % 32 != 0:
         raise SystemExit('ERROR: bad yolo_dim (%s)!' % yolo_dim)
 
+    # Create yolo
     trt_yolo = TrtYOLO(args.model, (h, w), args.category_num)
 
     if ACTIVATE_DISPLAY:
@@ -113,8 +176,24 @@ def main():
             WINDOW_NAME, 'Camera TensorRT YOLO Demo',
             cam.img_width, cam.img_height)
     vis = BBoxVisualization(cls_dict)
-    loop_and_detect(cam, trt_yolo, conf_th=0.3, vis=vis)
 
+    # Add single occuring tags to coco-json
+    cocoJson['type'] = "instances"
+    cocoJson["categories"] = list()
+    for category in cls_dict:
+        cocoJson["categories"].append({
+            'supercategory':'none',
+            'name':cls_dict.get(category, 'CLS{}'.format(category)),
+            'id':cocoCategoryId
+        })
+        cocoCategoryId += 1
+    cocoJson["images"] = list()
+    cocoJson["annotations"] = list()
+
+    # Run detection
+    loop_and_detect(cam, trt_yolo, args, confidence_thresh=0.3, visual=vis)
+
+    # Clean up
     cam.release()
     if ACTIVATE_DISPLAY:
         cv2.destroyAllWindows()

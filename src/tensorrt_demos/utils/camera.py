@@ -6,7 +6,7 @@ addition, this Camera class is further extended to take a video
 file or an image file as input.
 """
 
-
+import os
 import logging
 import threading
 import subprocess
@@ -26,6 +26,8 @@ def add_camera_args(parser):
     """Add parser augument for camera options."""
     parser.add_argument('--image', type=str, default=None,
                         help='image file name, e.g. dog.jpg')
+    parser.add_argument('--imageDir', type=str, default=None,
+                        help='image directory, e.g. /home/Pictures')
     parser.add_argument('--video', type=str, default=None,
                         help='video file name, e.g. traffic.mp4')
     parser.add_argument('--video_looping', action='store_true',
@@ -140,6 +142,8 @@ class Camera():
         self.is_opened = False
         self.video_file = ''
         self.video_looping = args.video_looping
+        self.imageNames = list()
+        self.currentImage = ''
         self.thread_running = False
         self.img_handle = None
         self.copy_frame = args.copy_frame
@@ -159,12 +163,19 @@ class Camera():
             logging.info('Camera: using a image file %s' % a.image)
             self.cap = 'image'
             self.img_handle = cv2.imread(a.image)
+            self.imageNames.append(a.image)
             if self.img_handle is not None:
                 if self.do_resize:
                     self.img_handle = cv2.resize(
                         self.img_handle, (a.width, a.height))
                 self.is_opened = True
                 self.img_height, self.img_width, _ = self.img_handle.shape
+        elif a.imageDir:
+            for image in os.listdir(a.imageDir):
+                fullImagePath = os.path.join(a.imageDir, image)
+                self.imageNames.append(fullImagePath)
+            self.cap = 'images'
+            self.is_opened = True
         elif a.video:
             logging.info('Camera: using a video file %s' % a.video)
             self.video_file = a.video
@@ -238,12 +249,27 @@ class Camera():
                 img = cv2.resize(img, (self.img_width, self.img_height))
             return img
         elif self.cap == 'image':
+            self.currentImage = self.args.image
             return np.copy(self.img_handle)
+        elif self.cap == 'images':
+            if len(self.imageNames) != 0:
+                img = self.imageNames.pop()
+                self.img_handle = cv2.imread(img)
+                if self.img_handle is not None:
+                    self.currentImage = img
+                    if self.do_resize:
+                        self.img_handle = cv2.resize(
+                            self.img_handle, (self.args.width, self.args.height))
+                    self.img_height, self.img_width, _ = self.img_handle.shape
+                    return np.copy(self.img_handle)
+            return None
+            
         else:
             if self.copy_frame:
                 return self.img_handle.copy()
             else:
                 return self.img_handle
+
 
     def release(self):
         self._stop()
