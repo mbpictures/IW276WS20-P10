@@ -13,10 +13,11 @@ from tqdm import tqdm
 import numpy as np
 import shutil
 from pathlib import Path
+import argparse
 
 
 # Convert Labelbox JSON file into YOLO-format labels ---------------------------
-def convert_labelbox_json(name, file):
+def convert_labelbox_json(name, file, darknet, filter):
     # Create folders
     path = make_folders()
 
@@ -42,7 +43,10 @@ def convert_labelbox_json(name, file):
             file.write('%g, %g\n' % (x['width'], x['height']))
 
     # Write *.names file
+    categories = []
     for x in tqdm(data['categories'], desc='Names'):
+        if x["name"] in filter: continue
+        categories.append(x["name"])
         with open(name + '.names', 'a') as file:
             file.write('%s\n' % x['name'])
 
@@ -51,21 +55,29 @@ def convert_labelbox_json(name, file):
     with open('out/_annotations.txt', 'a') as file:
         for x in tqdm(data['annotations'], desc='Annotations'):
             i = file_id.index(x['image_id'])  # image index
-            label_name = Path(file_name[i]).stem + '.jpg'
+            label_name = Path(file_name[i]).stem + ('.txt' if darknet else '.jpg')
             if i not in outputAnnot:
                 outputAnnot[i] = label_name
 
             # The Labelbox bounding box format is [top left x, top left y, width, height]
             box = np.array(x['bbox'], dtype=np.float64)
-            box[:2] += box[2:] / 2  # xy top-left corner to center
-            box[[0, 2]] /= width[i]  # normalize x
-            box[[1, 3]] /= height[i]  # normalize y
+            if darknet:
+                box[:2] += box[2:] / 2  # xy top-left corner to center
+                box[[0, 2]] /= width[i]  # normalize x
+                box[[1, 3]] /= height[i]  # normalize y
+            else:
+                box[2] = box[0] + box[2]
+                box[3] = box[1] + box[3]
 
             if (box[2] > 0.) and (box[3] > 0.):  # if w > 0 and h > 0
-                outputAnnot[i] += ' %.6f,%.6f,%.6f,%.6f,%g' % (*box, x['category_id'] - 1)
-
-        for line in outputAnnot.values():
-            file.write(line + "\n")
+                if darknet and len(categories) > int(x['category_id'] - 1) and categories[int(x['category_id'] - 1)] not in filter:
+                    with open(f"out/labels/{label_name}", "a") as fileDarknet:
+                        fileDarknet.write('%g %.6f %.6f %.6f %.6f\n' % (x['category_id'] - 1, *box))
+                else:
+                    outputAnnot[i] += ' %d,%d,%d,%d,%g' % (*box, x['category_id'] - 1)
+        if not darknet:
+            for line in outputAnnot.values():
+                file.write(line + "\n")
 
     # Split data into train, test, and validate files
     split_files(name, file_name)
@@ -86,7 +98,7 @@ def split_files(out_path, file_name, prefix_path=''):  # split training data
     datasets = {'train': i, 'test': j, 'val': k}
     for key, item in datasets.items():
         if item.any():
-            with open(out_path + '_' + key + '.txt', 'a') as file:
+            with open(out_path + '_' + key + '.txt', 'w+') as file:
                 for i in item:
                     file.write('%s%s\n' % (prefix_path, file_name[i]))
 
@@ -103,7 +115,12 @@ def split_indices(x, train=0.9, test=0.1, validate=0.0, shuffle=True):  # split 
     return v[:i], v[i:j], v[j:k]  # return indices
 
 if __name__ == '__main__':
-    if len(sys.argv) < 3:
-        print("How to use this script: run.py NAME JSON_FILE")
-    else:
-        convert_labelbox_json(name=sys.argv[1], file=sys.argv[2])
+    parser = argparse.ArgumentParser(description="Convert COCOJSON format to yolo txt format.")
+    parser.add_argument("-name", required=True, type=str, help="file name")
+    parser.add_argument("-json", required=True, type=str, help="json file to convert")
+    parser.add_argument("-darknet", type=bool, help="should the txt files be compatible with the darknet format?")
+    parser.add_argument("-filter-categories", type=str, nargs="*", help="Filter categories in dataset. Expects indexes")
+
+    args = parser.parse_args()
+
+    convert_labelbox_json(name=args.name, file=args.json, darknet=args.darknet, filter=args.filter_categories)

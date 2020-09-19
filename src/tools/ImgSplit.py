@@ -135,7 +135,7 @@ class ImgSplit():
         imgheight, imgwidth = resizeimg.shape[:2]
 
         # split image and annotation in sliding window manner
-        outbasename = imgname.replace('/', '_').split('.')[0] + '___' + str(scale) + '__'
+        outbasename = imgname.replace('/', '_').replace(' ', '_').split('.')[0] + '___' + str(scale) + '__'
         subimageannos = {}
         left, up = 0, 0
         while left < imgwidth:
