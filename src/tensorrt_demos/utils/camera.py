@@ -171,6 +171,8 @@ class Camera():
                 self.is_opened = True
                 self.img_height, self.img_width, _ = self.img_handle.shape
         elif a.imageDir:
+            if not os.path.exists(a.imageDir):
+                raise ValueError("Image dir path does not exist!")
             for image in os.listdir(a.imageDir):
                 fullImagePath = os.path.join(a.imageDir, image)
                 self.imageNames.append(fullImagePath)
