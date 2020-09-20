@@ -4,9 +4,10 @@ import subprocess
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Use this script to start the docker image")
-    parser.add_argument("input", help="The directory, which contains all test images")
-    parser.add_argument("output", help="Directory where the output json (COCO Format) should be stored")
-    parser.add_argument("image", help="Name of the docker image")
+    parser.add_argument("--input", help="The directory, which contains all test images")
+    parser.add_argument("--output", help="Directory where the output json (COCO Format) should be stored")
+    parser.add_argument("--image", help="Name of the docker image", nargs='?', default="iw276ws20-p10:0.1")
+    parser.add_argument("--valid_json", help="Path to the valid coco json file")
     parser.add_argument("--tiny", help="Use the TINY YOLOv4 model to infer the images", action="store_true")
     args = parser.parse_args()
 
@@ -37,7 +38,9 @@ if __name__ == "__main__":
         "python3",
         "trt_yolo.py",
         "--imageDir",
-        "/home/in",
+        "/home/in/images",
         "-m",
-        weights
+        weights,
+        "-v",
+        f"/home/in/{os.path.basename(args.valid_json)}"
     ])
