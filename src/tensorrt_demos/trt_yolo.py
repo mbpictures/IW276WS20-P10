@@ -24,6 +24,7 @@ from utils.yolo_with_plugins import TrtYOLO
 
 WINDOW_NAME = 'TrtYOLODemo'
 ACTIVATE_DISPLAY = False
+WRITE_IMAGES = False
 cocoAnnotationId = 1
 cocoImageId = 0
 cocoCategoryId = 0
@@ -107,7 +108,6 @@ def loop_and_detect(camera, trt_yolo, args, confidence_thresh, visual):
     """
     fps = 0.0
     tic = time.time()
-    imageWritten = False
 
     while len(camera.imageNames) != 0:
         if ACTIVATE_DISPLAY:
@@ -117,8 +117,9 @@ def loop_and_detect(camera, trt_yolo, args, confidence_thresh, visual):
         if img is None:
             break
         boxes, confs, clss = trt_yolo.detect(img, confidence_thresh)
-        img = visual.draw_bboxes(img, boxes, confs, clss)
-        img = show_fps(img, fps)
+        if ACTIVATE_DISPLAY or WRITE_IMAGES:
+            img = visual.draw_bboxes(img, boxes, confs, clss)
+            img = show_fps(img, fps)
         if ACTIVATE_DISPLAY:
             cv2.imshow(WINDOW_NAME, img)
         toc = time.time()
@@ -130,11 +131,13 @@ def loop_and_detect(camera, trt_yolo, args, confidence_thresh, visual):
             key = cv2.waitKey(1)
             if key == 27:  # ESC key: quit program
                 break
+        if WRITE_IMAGES:
+            path = os.path.join("/home/out/images/", camera.currentImage.split('/')[-1])
+            print("Image path: ", path)
+            cv2.imwrite(path, img)
         print("FPS: {:3.2f} and {} Images left.".format(fps, len(camera.imageNames)))
-        #if not imageWritten:
-        #    cv2.imwrite("/home/Pictures/test.png", img)
-        #    imageWritten = True
         append_coco(boxes, confs, clss, camera)
+
     
     # Write coco json file when done
     cocoFile = json.dumps(cocoJson, cls=NpEncoder)
