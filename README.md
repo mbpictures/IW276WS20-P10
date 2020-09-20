@@ -40,17 +40,10 @@ Pre-trained model is available at pretrained-models/
 2. Build the docker image
 > cd IW276WS20-P10/
 
-> sudo ./build_docker_image
-3. Start the docker container (consider passing a mounting directory for images/videos with -v source:destination)
-> sudo docker run -it --rm --runtime nvidia --network host iw276ws20-p10:0.1
-4. Start the TensorRT demo
-> cd IW276WS20-P10/src/tensorrt_demos/
+> sudo python3 build_docker.py
+3. Start the docker container (run "python3 start_docker.py -h" for help)
+> sudo python3 start_docker.py --input "Directory where the images to detect are stored" --output "Directory where the output is stored" --image "name and tag of the docker container to run" --valid-json "Path to the valid json file" [--tiny]
 
-> python3 trt_yolo.py --image /home/Pictures/some_picture.jpg -m yolov4-416
-
-or
-
-> python3 trt_yolo.py --video /home/Videos/some_video.mp4 -m yolov4-416
 
 ## Docker
 HOW TO
