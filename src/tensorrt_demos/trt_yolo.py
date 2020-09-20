@@ -25,10 +25,8 @@ from utils.yolo_with_plugins import TrtYOLO
 WINDOW_NAME = 'TrtYOLODemo'
 ACTIVATE_DISPLAY = False
 WRITE_IMAGES = False
-cocoAnnotationId = 1
-cocoImageId = 0
-cocoCategoryId = 0
-cocoJson = dict()
+validCocoJson = dict()
+resultJson = list()
 
 
 class NpEncoder(json.JSONEncoder):
@@ -58,43 +56,40 @@ def parse_args():
         help=('[yolov3|yolov3-tiny|yolov3-spp|yolov4|yolov4-tiny]-'
               '[{dimension}], where dimension could be a single '
               'number (e.g. 288, 416, 608) or WxH (e.g. 416x256)'))
+    parser.add_argument(
+        '-v', '--valid_coco', type=str,
+        help='Path to the valid coco json file')
     args = parser.parse_args()
     return args
 
 
+def process_valid_json(cocoJsonFile):
+    global validCocoJson
+    with open(cocoJsonFile, "r") as jsonFile:
+        data = jsonFile.read()
+        result = json.loads(data)
+    for image in result["images"]:
+        validCocoJson[os.path.basename(image["file_name"])] = image["id"]
+
+
 def append_coco(boxes, confidences, classes, camera):
-    global cocoImageId
-    global cocoAnnotationId
-    global cocoJson
-    cocoImage = { 
-        'file_name':camera.currentImage,
-        'height':camera.img_height,
-        'width':camera.img_width,
-        'id':cocoImageId
-    }
+    global resultJson
+    global validCocoJson
 
     for box, confidence, clss in zip(boxes, confidences, classes):
         classId = int(clss)
         annotation = {
-            'id':cocoAnnotationId,
+            'image_id':validCocoJson[os.path.basename(camera.currentImage)],
             'bbox':[
                 int(box[0]),
                 int(box[1]),
-                int(box[2]),
-                int(box[3])
-            ] , 
-            'image_id':cocoImageId, 
-            'segmentation':[], 
-            'ignore':0, 
-            'area':(box[2]-box[0]) * (box[3]-box[1]), 
-            'iscrowd':0, 
+                int(box[2] - box[0]),
+                int(box[3] - box[1])
+            ],
+            'score':confidence,
             'category_id':classId
         }
-        cocoJson['annotations'].append(annotation)
-        cocoAnnotationId += 1
-
-    cocoJson['images'].append(cocoImage)
-    cocoImageId += 1
+        resultJson.append(annotation)
 
 
 def loop_and_detect(camera, trt_yolo, args, confidence_thresh, visual):
@@ -132,7 +127,7 @@ def loop_and_detect(camera, trt_yolo, args, confidence_thresh, visual):
             if key == 27:  # ESC key: quit program
                 break
         if WRITE_IMAGES:
-            path = os.path.join("/home/out/images/", camera.currentImage.split('/')[-1])
+            path = os.path.join("/home/out/images/", os.path.basename(camera.currentImage))
             print("Image path: ", path)
             cv2.imwrite(path, img)
         print("FPS: {:3.2f} and {} Images left.".format(fps, len(camera.imageNames)))
@@ -140,8 +135,8 @@ def loop_and_detect(camera, trt_yolo, args, confidence_thresh, visual):
 
     
     # Write coco json file when done
-    cocoFile = json.dumps(cocoJson, cls=NpEncoder)
-    f = open("/home/out/cocoFile.json", "w+")
+    cocoFile = json.dumps(resultJson, cls=NpEncoder)
+    f = open("/home/out/result.json", "w+")
     f.write(cocoFile)
     f.close()
             
@@ -153,6 +148,9 @@ def main():
         raise SystemExit('ERROR: bad category_num (%d)!' % args.category_num)
     if not os.path.isfile('yolo/%s.trt' % args.model):
         raise SystemExit('ERROR: file (yolo/%s.trt) not found!' % args.model)
+
+    # Process valid coco json file
+    process_valid_json(args.valid_coco)
 
     # Create camera for video/image input
     cam = Camera(args)
@@ -179,19 +177,6 @@ def main():
             WINDOW_NAME, 'Camera TensorRT YOLO Demo',
             cam.img_width, cam.img_height)
     vis = BBoxVisualization(cls_dict)
-
-    # Add single occuring tags to coco-json
-    cocoJson['type'] = "instances"
-    cocoJson["categories"] = list()
-    for category in cls_dict:
-        cocoJson["categories"].append({
-            'supercategory':'none',
-            'name':cls_dict.get(category, 'CLS{}'.format(category)),
-            'id':cocoCategoryId
-        })
-        cocoCategoryId += 1
-    cocoJson["images"] = list()
-    cocoJson["annotations"] = list()
 
     # Run detection
     loop_and_detect(cam, trt_yolo, args, confidence_thresh=0.3, visual=vis)
