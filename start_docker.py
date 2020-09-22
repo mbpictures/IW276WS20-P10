@@ -25,7 +25,7 @@ if __name__ == "__main__":
     if args.write_images:
 	    print(f"DEBUG: WRITING IMAGES TO {args.output}/images")
 
-    subprocess.run([
+    subprocess.run(filter(lambda x: x != "", [
         "sudo",
         "docker",
         "run",
@@ -49,4 +49,4 @@ if __name__ == "__main__":
         "-v",
         f"/home/in/{os.path.basename(args.valid_json)}",
 	    writeImages
-    ])
+    ]))
