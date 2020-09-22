@@ -7,7 +7,7 @@ if __name__ == "__main__":
     parser.add_argument("--input", help="The directory, which contains all test images")
     parser.add_argument("--output", help="Directory where the output json (COCO Format) should be stored")
     parser.add_argument("--image", help="Name of the docker image", nargs='?', default="iw276ws20-p10:0.1")
-    parser.add_argument("--valid_json", help="Path to the valid coco json file")
+    parser.add_argument("--valid_json", help="Name of the valid coco json file (the file has to be a direct member of the input directory)")
     parser.add_argument("--tiny", help="Use the TINY YOLOv4 model to infer the images", action="store_true")
     parser.add_argument('--write_images', action="store_true", help='Write images with detected bounding boxes to output directory')
     args = parser.parse_args()
