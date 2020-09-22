@@ -49,6 +49,13 @@ RUN cd plugins && \
 WORKDIR /home/
 RUN mkdir out
 RUN mkdir in
+
+# finally unzip the yolov4 weights as they are compressed due github limitations
+WORKDIR /home/IW276WS20-P10/pretrained-models
+RUN apt-get install -y dtrx
+RUN dtrx custom-yolov4-detector_final-416x416.zip -v -n -f
+RUN rm custom-yolov4-detector_final-416x416.z01 custom-yolov4-detector_final-416x416.z02 custom-yolov4-detector_final-416x416.zip
+
 WORKDIR /home/IW276WS20-P10/src/tensorrt_demos
 
 # ....
