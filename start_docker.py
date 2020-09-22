@@ -9,6 +9,7 @@ if __name__ == "__main__":
     parser.add_argument("--image", help="Name of the docker image", nargs='?', default="iw276ws20-p10:0.1")
     parser.add_argument("--valid_json", help="Path to the valid coco json file")
     parser.add_argument("--tiny", help="Use the TINY YOLOv4 model to infer the images", action="store_true")
+    parser.add_argument('--write_images', action="store_true", help='Write images with detected bounding boxes to output directory')
     args = parser.parse_args()
 
     if not os.path.exists(args.input) or not os.path.exists(args.output):
@@ -17,8 +18,12 @@ if __name__ == "__main__":
     weights = "custom-yolov4-detector_final-416x416"
     if args.tiny:
         weights = "custom-yolov4-tiny-detector_final-416x416"
+
+    writeImages = "--write_images" if args.write_images else ""
     print(f"DEBUG: STARTING IMAGE {args.image}")
     print(f"DEBUG: USING WEIGHTS {weights}")
+    if args.write_images:
+	    print(f"DEBUG: WRITING IMAGES TO {args.output}/images")
 
     subprocess.run([
         "sudo",
@@ -42,5 +47,6 @@ if __name__ == "__main__":
         "-m",
         weights,
         "-v",
-        f"/home/in/{os.path.basename(args.valid_json)}"
+        f"/home/in/{os.path.basename(args.valid_json)}",
+	    writeImages
     ])

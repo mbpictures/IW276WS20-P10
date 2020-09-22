@@ -27,6 +27,7 @@ ACTIVATE_DISPLAY = False
 WRITE_IMAGES = False
 validCocoJson = dict()
 resultJson = list()
+IMAGE_OUTPUT = "/home/out/images"
 
 
 class NpEncoder(json.JSONEncoder):
@@ -59,6 +60,9 @@ def parse_args():
     parser.add_argument(
         '-v', '--valid_coco', type=str,
         help='Path to the valid coco json file')
+    parser.add_argument(
+        '--write_images', action="store_true",
+        help='Write images with detected bounding boxes to output directory')
     args = parser.parse_args()
     return args
 
@@ -112,7 +116,7 @@ def loop_and_detect(camera, trt_yolo, args, confidence_thresh, visual):
         if img is None:
             break
         boxes, confs, clss = trt_yolo.detect(img, confidence_thresh)
-        if ACTIVATE_DISPLAY or WRITE_IMAGES:
+        if ACTIVATE_DISPLAY or args.write_images:
             img = visual.draw_bboxes(img, boxes, confs, clss)
             img = show_fps(img, fps)
         if ACTIVATE_DISPLAY:
@@ -126,8 +130,8 @@ def loop_and_detect(camera, trt_yolo, args, confidence_thresh, visual):
             key = cv2.waitKey(1)
             if key == 27:  # ESC key: quit program
                 break
-        if WRITE_IMAGES:
-            path = os.path.join("/home/out/images/", os.path.basename(camera.currentImage))
+        if args.write_images:
+            path = os.path.join(IMAGE_OUTPUT, os.path.basename(camera.currentImage))
             print("Image path: ", path)
             cv2.imwrite(path, img)
         print("FPS: {:3.2f} and {} Images left.".format(fps, len(camera.imageNames)))
@@ -151,6 +155,9 @@ def main():
 
     # Process valid coco json file
     process_valid_json(args.valid_coco)
+
+    if args.write_images:
+        if not os.path.exists(IMAGE_OUTPUT): os.mkdir(IMAGE_OUTPUT)
 
     # Create camera for video/image input
     cam = Camera(args)
