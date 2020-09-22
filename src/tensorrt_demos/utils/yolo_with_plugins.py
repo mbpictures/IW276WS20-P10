@@ -231,8 +231,7 @@ class TrtYOLO(object):
     """TrtYOLO class encapsulates things needed to run TRT YOLO."""
 
     def _load_engine(self):
-        TRTbin = 'yolo/%s.trt' % self.model
-        with open(TRTbin, 'rb') as f, trt.Runtime(self.trt_logger) as runtime:
+        with open(self.model, 'rb') as f, trt.Runtime(self.trt_logger) as runtime:
             return runtime.deserialize_cuda_engine(f.read())
 
     def __init__(self, model, input_shape, category_num=80, cuda_ctx=None):

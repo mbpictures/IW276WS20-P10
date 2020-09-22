@@ -25,6 +25,8 @@ if __name__ == "__main__":
     if args.write_images:
 	    print(f"DEBUG: WRITING IMAGES TO {args.output}/images")
 
+    weights = os.path.join("/home/IW276WS20-P10/pretrained-models", weights + ".trt")
+
     subprocess.run(filter(lambda x: x != "", [
         "sudo",
         "docker",

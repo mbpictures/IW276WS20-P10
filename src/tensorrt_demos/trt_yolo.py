@@ -150,8 +150,8 @@ def main():
     args = parse_args()
     if args.category_num <= 0:
         raise SystemExit('ERROR: bad category_num (%d)!' % args.category_num)
-    if not os.path.isfile('yolo/%s.trt' % args.model):
-        raise SystemExit('ERROR: file (yolo/%s.trt) not found!' % args.model)
+    if not os.path.isfile(args.model):
+        raise SystemExit('ERROR: file %s not found!' % args.model)
 
     # Process valid coco json file
     process_valid_json(args.valid_coco)
@@ -165,7 +165,7 @@ def main():
         raise SystemExit('ERROR: failed to open camera!')
 
     cls_dict = get_cls_dict(args.category_num)
-    yolo_dim = args.model.split('-')[-1]
+    yolo_dim = (args.model.replace(".trt", "")).split('-')[-1]
     if 'x' in yolo_dim:
         dim_split = yolo_dim.split('x')
         if len(dim_split) != 2:
