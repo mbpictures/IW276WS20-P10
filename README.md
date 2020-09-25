@@ -42,7 +42,7 @@ Pre-trained model is available at pretrained-models/
 
 > sudo python3 build_docker.py
 3. Start the docker container (run "python3 start_docker.py -h" for help)
-> sudo python3 start_docker.py --input "Directory where the images to detect are stored" --output "Directory where the output is stored" --image "name and tag of the docker container to run" --valid-json "Path to the valid json file" [--tiny]
+> sudo python3 start_docker.py --input "Directory where the images to detect are stored" --output "Directory where the output is stored" --image "name and tag of the docker container to run" --valid-json "Path to the valid json file" [--tiny] [--write_images]
 
 
 ## Docker
