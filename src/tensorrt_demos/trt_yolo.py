@@ -106,7 +106,6 @@ def loop_and_detect(camera, trt_yolo, args, confidence_thresh, visual):
       visual: for visualization.
     """
     fps = 0.0
-    tic = time.time()
 
     while len(camera.imageNames) != 0:
         if ACTIVATE_DISPLAY:
@@ -115,17 +114,17 @@ def loop_and_detect(camera, trt_yolo, args, confidence_thresh, visual):
         img = camera.read()
         if img is None:
             break
+        tic = time.time()
         boxes, confs, clss = trt_yolo.detect(img, confidence_thresh)
+        toc = time.time()
         if ACTIVATE_DISPLAY or args.write_images:
             img = visual.draw_bboxes(img, boxes, confs, clss)
             img = show_fps(img, fps)
         if ACTIVATE_DISPLAY:
             cv2.imshow(WINDOW_NAME, img)
-        toc = time.time()
         curr_fps = 1.0 / (toc - tic)
         # calculate an exponentially decaying average of fps number
         fps = curr_fps if fps == 0.0 else (fps*0.95 + curr_fps*0.05)
-        tic = toc
         if ACTIVATE_DISPLAY:
             key = cv2.waitKey(1)
             if key == 27:  # ESC key: quit program
