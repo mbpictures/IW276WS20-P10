@@ -112,6 +112,7 @@ def loop_and_detect(camera, trt_yolo, args, confidence_thresh, visual):
     cumulative_frame_time = 0.0
     iterations = 0
 
+    # endless loop when user provides single image/webcam
     while len(camera.imageNames) != 0:
         if args.activate_display and (cv2.getWindowProperty(WINDOW_NAME, 0) < 0):
             break
