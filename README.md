@@ -52,6 +52,7 @@ HOW TO
 
 This repo is based on
   - [tensorrt_demos](https://github.com/jkjung-avt/tensorrt_demos)
+  - [PANDA-Toolkit](https://github.com/GigaVision/PANDA-Toolkit)
 
 Thanks to the original authors for their work!
 
