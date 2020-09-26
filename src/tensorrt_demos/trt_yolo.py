@@ -78,8 +78,8 @@ def append_coco(boxes, confidences, classes, camera):
     global resultJson
     global validCocoJson
 
-    for box, confidence, clss in zip(boxes, confidences, classes):
-        class_id = int(clss)
+    for box, confidence, classes in zip(boxes, confidences, classes):
+        class_id = int(classes)
         annotation = {
             'image_id': validCocoJson[os.path.basename(camera.currentImage)],
             'bbox': [
@@ -144,9 +144,9 @@ def main():
     global cocoCategoryId
     args = parse_args()
     if args.category_num <= 0:
-        raise SystemExit('ERROR: bad category_num (%d)!' % args.category_num)
+        raise SystemExit(f'ERROR: bad category_num ({args.category_num})!')
     if not os.path.isfile(args.model):
-        raise SystemExit('ERROR: file %s not found!' % args.model)
+        raise SystemExit(f'ERROR: file {args.model} not found!')
 
     # Process valid coco json file
     process_valid_json(args.valid_coco)
@@ -159,17 +159,17 @@ def main():
     if not cam.get_is_opened():
         raise SystemExit('ERROR: failed to open camera!')
 
-    cls_dict = get_cls_dict(args.category_num)
+    class_dict = get_cls_dict(args.category_num)
     yolo_dim = (args.model.replace(".trt", "")).split('-')[-1]
     if 'x' in yolo_dim:
         dim_split = yolo_dim.split('x')
         if len(dim_split) != 2:
-            raise SystemExit('ERROR: bad yolo_dim (%s)!' % yolo_dim)
+            raise SystemExit(f'ERROR: bad yolo_dim ({yolo_dim})!')
         w, h = int(dim_split[0]), int(dim_split[1])
     else:
         h = w = int(yolo_dim)
     if h % 32 != 0 or w % 32 != 0:
-        raise SystemExit('ERROR: bad yolo_dim (%s)!' % yolo_dim)
+        raise SystemExit(f'ERROR: bad yolo_dim ({yolo_dim})!')
 
     # Create yolo
     trt_yolo = TrtYOLO(args.model, (h, w), args.category_num)
@@ -178,10 +178,10 @@ def main():
         open_window(
             WINDOW_NAME, 'Camera TensorRT YOLO Demo',
             cam.img_width, cam.img_height)
-    vis = BBoxVisualization(cls_dict)
+    visual = BBoxVisualization(class_dict)
 
     # Run detection
-    loop_and_detect(cam, trt_yolo, args, confidence_thresh=0.3, visual=vis)
+    loop_and_detect(cam, trt_yolo, args, confidence_thresh=0.3, visual=visual)
 
     # Clean up
     cam.release()
