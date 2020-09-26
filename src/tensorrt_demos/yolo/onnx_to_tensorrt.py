@@ -67,12 +67,11 @@ if trt.__version__[0] >= '7':
 
 def build_engine(onnx_file_path, category_num=80, verbose=False):
     """Build a TensorRT engine from an ONNX file."""
-    TRT_LOGGER = trt.Logger(trt.Logger.VERBOSE) if verbose else trt.Logger()
-    with trt.Builder(TRT_LOGGER) as builder, builder.create_network(*EXPLICIT_BATCH) as network, trt.OnnxParser(network, TRT_LOGGER) as parser:
+    trt_logger = trt.Logger(trt.Logger.VERBOSE) if verbose else trt.Logger()
+    with trt.Builder(trt_logger) as builder, builder.create_network(*EXPLICIT_BATCH) as network, trt.OnnxParser(network, trt_logger) as parser:
         builder.max_workspace_size = 1 << 28
         builder.max_batch_size = 1
         builder.fp16_mode = True
-        #builder.strict_type_constraints = True
 
         # Parse model file
         print('Loading ONNX file from path {}...'.format(onnx_file_path))
@@ -92,7 +91,7 @@ def build_engine(onnx_file_path, category_num=80, verbose=False):
         print('Adding yolo_layer plugins...')
         model_name = onnx_file_path[:-5]
         network = add_yolo_plugins(
-            network, model_name, category_num, TRT_LOGGER)
+            network, model_name, category_num, trt_logger)
 
         print('Building an engine.  This would take a while...')
         print('(Use "--verbose" to enable verbose logging.)')

@@ -13,303 +13,307 @@ from collections import defaultdict
 
 class ImgSplit():
     def __init__(self,
-                 basepath,
-                 annofile,
-                 annomode,
-                 outpath,
-                 outannofile,
+                 base_path,
+                 annotations_file,
+                 annotation_mode,
+                 out_path,
+                 out_annotations_file,
                  code='utf-8',
                  gap=100,
-                 subwidth=1000,
-                 subheight=500,
+                 sub_width=1000,
+                 sub_height=500,
                  thresh=0.7,
-                 outext='.jpg'
+                 out_extension='.jpg'
                  ):
         """
-        :param basepath: base directory for panda image data and annotations
-        :param annofile: annotation file path
-        :param annomode:the type of annotation, which can be 'person', 'vehicle', 'headbbox' or 'headpoint'
-        :param outpath: output base path for panda data
-        :param outannofile: output file path for annotation
-        :param code: encodeing format of txt file
+        :param base_path: base directory for panda image data and annotations
+        :param annotations_file: annotation file path
+        :param annotation_mode:the type of annotation, which can be 'person', 'vehicle', 'headbbox' or 'headpoint'
+        :param out_path: output base path for panda data
+        :param out_annotations_file: output file path for annotation
+        :param code: encoding format of txt file
         :param gap: overlap between two patches
-        :param subwidth: sub-width of patch
-        :param subheight: sub-height of patch
+        :param sub_width: sub-width of patch
+        :param sub_height: sub-height of patch
         :param thresh: the square thresh determine whether to keep the instance which is cut in the process of split
-        :param outext: ext for the output image format
+        :param out_extension: ext for the output image format
         """
-        self.basepath = basepath
-        self.annofile = annofile
-        self.annomode = annomode
-        self.outpath = outpath
-        self.outannofile = outannofile
+        self.base_path = base_path
+        self.annotations_file = annotations_file
+        self.annotation_mode = annotation_mode
+        self.out_path = out_path
+        self.out_annotations_file = out_annotations_file
         self.code = code
         self.gap = gap
-        self.subwidth = subwidth
-        self.subheight = subheight
-        self.slidewidth = self.subwidth - self.gap
-        self.slideheight = self.subheight - self.gap
+        self.sub_width = sub_width
+        self.sub_height = sub_height
+        self.slide_width = self.sub_width - self.gap
+        self.slide_height = self.sub_height - self.gap
         self.thresh = thresh
-        self.imagepath = os.path.join(self.basepath, 'image_train')
-        self.annopath = os.path.join(self.basepath, 'image_annos', annofile)
-        self.outimagepath = os.path.join(self.outpath, 'image_train')
-        self.outannopath = os.path.join(self.outpath, 'image_annos')
-        self.outext = outext
-        if not os.path.exists(self.outimagepath):
-            os.makedirs(self.outimagepath)
-        if not os.path.exists(self.outannopath):
-            os.makedirs(self.outannopath)
-        self.annos = defaultdict(list)
-        self.loadAnno()
+        self.image_path = os.path.join(self.base_path, 'image_train')
+        self.annotations_path = os.path.join(self.base_path, 'image_annos', annotations_file)
+        self.out_image_path = os.path.join(self.out_path, 'image_train')
+        self.out_annotations_path = os.path.join(self.out_path, 'image_annos')
+        self.out_extension = out_extension
+        if not os.path.exists(self.out_image_path):
+            os.makedirs(self.out_image_path)
+        if not os.path.exists(self.out_annotations_path):
+            os.makedirs(self.out_annotations_path)
+        self.annotations = defaultdict(list)
+        self.load_annotations()
 
-    def loadAnno(self):
-        print('Loading annotation json file: {}'.format(self.annopath))
-        with open(self.annopath, 'r') as load_f:
+    def load_annotations(self):
+        print('Loading annotation json file: {}'.format(self.annotations_path))
+        with open(self.annotations_path, 'r') as load_f:
             annodict = json.load(load_f)
-        self.annos = annodict
+        self.annotations = annodict
 
-    def splitdata(self, scale, imgrequest=None, imgfilters=[]):
+    def split_data(self, scale, image_request=None, image_filters=[]):
         """
         :param scale: resize rate before cut
-        :param imgrequest: list, images names you want to request, eg. ['1-HIT_canteen/IMG_1_4.jpg', ...]
-        :param imgfilters: essential keywords in image name
+        :param image_request: list, images names you want to request, eg. ['1-HIT_canteen/IMG_1_4.jpg', ...]
+        :param image_filters: essential keywords in image name
         """
-        if imgrequest is None or not isinstance(imgrequest, list):
-            imgnames = list(self.annos.keys())
+        if image_request is None or not isinstance(image_request, list):
+            image_names = list(self.annotations.keys())
         else:
-            imgnames = imgrequest
+            image_names = image_request
 
-        splitannos = {}
-        for imgname in imgnames:
-            iskeep = False
-            for imgfilter in imgfilters:
-                if imgfilter in imgname:
-                    iskeep = True
-            if imgfilters and not iskeep:
+        split_annotations = {}
+        for image_name in image_names:
+            keep = False
+            for image_filter in image_filters:
+                if image_filter in image_name:
+                    keep = True
+            if image_filters and not keep:
                 continue
-            splitdict = self.SplitSingle(imgname, scale)
-            splitannos.update(splitdict)
+            split_dict = self.split_single(image_name, scale)
+            split_annotations.update(split_dict)
 
         # add image id
-        imgid = 1
-        for imagename in splitannos.keys():
-            splitannos[imagename]['image id'] = imgid
-            imgid += 1
+        image_id = 1
+        for image_name in split_annotations.keys():
+            split_annotations[image_name]['image id'] = image_id
+            image_id += 1
         # save new annotation for split images
-        outdir = os.path.join(self.outannopath, self.outannofile)
-        with open(outdir, 'w', encoding=self.code) as f:
-            dict_str = json.dumps(splitannos, indent=2)
+        out_dir = os.path.join(self.out_annotations_path, self.out_annotations_file)
+        with open(out_dir, 'w', encoding=self.code) as f:
+            dict_str = json.dumps(split_annotations, indent=2)
             f.write(dict_str)
 
-    def loadImg(self, imgpath):
+    @staticmethod
+    def load_image(image_path):
         """
-        :param imgpath: the path of image to load
+        :param image_path: the path of image to load
         :return: loaded img object
         """
-        print('filename:', imgpath)
-        if not os.path.exists(imgpath):
-            print('Can not find {}, please check local dataset!'.format(imgpath))
+        print('filename:', image_path)
+        if not os.path.exists(image_path):
+            print('Can not find {}, please check local dataset!'.format(image_path))
             return None
-        img = cv2.imread(imgpath)
+        img = cv2.imread(image_path)
         return img
 
-    def SplitSingle(self, imgname, scale):
+    def split_single(self, image_name, scale):
         """
         split a single image and ground truth
-        :param imgname: image name
+        :param image_name: image name
         :param scale: the resize scale for the image
         :return:
         """
-        imgpath = os.path.join(self.imagepath, imgname)
-        img = self.loadImg(imgpath)
+        image_path = os.path.join(self.image_path, image_name)
+        img = self.load_image(image_path)
         if img is None:
             return
-        imagedict = self.annos[imgname]
-        objlist = imagedict['objects list']
+        image_dict = self.annotations[image_name]
+        object_list = image_dict['objects list']
 
         # re-scale image if scale != 1
         if scale != 1:
-            resizeimg = cv2.resize(img, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
+            resize_image = cv2.resize(img, None, fx=scale, fy=scale, interpolation=cv2.INTER_CUBIC)
         else:
-            resizeimg = img
-        imgheight, imgwidth = resizeimg.shape[:2]
+            resize_image = img
+        image_height, image_width = resize_image.shape[:2]
 
         # split image and annotation in sliding window manner
-        outbasename = imgname.replace('/', '_').replace(' ', '_').split('.')[0] + '___' + str(scale) + '__'
-        subimageannos = {}
+        out_base_name = image_name.replace('/', '_').replace(' ', '_').split('.')[0] + '___' + str(scale) + '__'
+        sub_image_annotations = {}
         left, up = 0, 0
-        while left < imgwidth:
-            if left + self.subwidth >= imgwidth:
-                left = max(imgwidth - self.subwidth, 0)
+        while left < image_width:
+            if left + self.sub_width >= image_width:
+                left = max(image_width - self.sub_width, 0)
             up = 0
-            while up < imgheight:
-                if up + self.subheight >= imgheight:
-                    up = max(imgheight - self.subheight, 0)
-                right = min(left + self.subwidth, imgwidth - 1)
-                down = min(up + self.subheight, imgheight - 1)
+            while up < image_height:
+                if up + self.sub_height >= image_height:
+                    up = max(image_height - self.sub_height, 0)
+                right = min(left + self.sub_width, image_width - 1)
+                down = min(up + self.sub_height, image_height - 1)
                 coordinates = left, up, right, down
-                subimgname = outbasename + str(left) + '__' + str(up) + self.outext
+                sub_image_name = out_base_name + str(left) + '__' + str(up) + self.out_extension
                 # split annotations according to annotation mode
-                if self.annomode == 'person':
-                    newobjlist = self.personAnnoSplit(objlist, imgwidth, imgheight, coordinates)
-                elif self.annomode == 'vehicle':
-                    newobjlist = self.vehicleAnnoSplit(objlist, imgwidth, imgheight, coordinates)
-                elif self.annomode == 'headbbox':
-                    newobjlist = self.headbboxAnnoSplit(objlist, imgwidth, imgheight, coordinates)
-                elif self.annomode == 'headpoint':
-                    newobjlist = self.headpointAnnoSplit(objlist, imgwidth, imgheight, coordinates)
+                if self.annotation_mode == 'person':
+                    new_objects_list = self.person_annotations_split(object_list, image_width, image_height, coordinates)
+                elif self.annotation_mode == 'vehicle':
+                    new_objects_list = self.vehicle_annotations_split(object_list, image_width, image_height, coordinates)
+                elif self.annotation_mode == 'headbbox':
+                    new_objects_list = self.head_bbox_annotations_split(object_list, image_width, image_height, coordinates)
+                elif self.annotation_mode == 'headpoint':
+                    new_objects_list = self.head_point_annotations_split(object_list, image_width, image_height, coordinates)
 
-                if up + self.subheight >= imgheight:
+                if up + self.sub_height >= image_height:
                     break
                 else:
-                    up = up + self.slideheight
+                    up = up + self.slide_height
                 
                 # no persons on image? SKIP!
-                if len(newobjlist) == 0:
+                if len(new_objects_list) == 0:
                     continue
 
-                self.savesubimage(resizeimg, subimgname, coordinates)
-                subimageannos[subimgname] = {
+                self.save_sub_image(resize_image, sub_image_name, coordinates)
+                sub_image_annotations[sub_image_name] = {
                     "image size": {
                         "height": down - up + 1,
                         "width": right - left + 1
                     },
-                    "objects list": newobjlist
+                    "objects list": new_objects_list
                 }
                 
-            if left + self.subwidth >= imgwidth:
+            if left + self.sub_width >= image_width:
                 break
             else:
-                left = left + self.slidewidth
+                left = left + self.slide_width
 
-        return subimageannos
+        return sub_image_annotations
 
-    def judgeRect(self, rectdict, imgwidth, imgheight, coordinates):
+    def judge_rect(self, rect_dict, image_width, image_height, coordinates):
         left, up, right, down = coordinates
-        xmin = int(rectdict['tl']['x'] * imgwidth)
-        ymin = int(rectdict['tl']['y'] * imgheight)
-        xmax = int(rectdict['br']['x'] * imgwidth)
-        ymax = int(rectdict['br']['y'] * imgheight)
-        square = (xmax - xmin) * (ymax - ymin)
+        x_min = int(rect_dict['tl']['x'] * image_width)
+        y_min = int(rect_dict['tl']['y'] * image_height)
+        x_max = int(rect_dict['br']['x'] * image_width)
+        y_max = int(rect_dict['br']['y'] * image_height)
+        square = (x_max - x_min) * (y_max - y_min)
 
-        if (xmax <= left or right <= xmin) and (ymax <= up or down <= ymin):
+        if (x_max <= left or right <= x_min) and (y_max <= up or down <= y_min):
             intersection = 0
         else:
-            lens = min(xmax, right) - max(xmin, left)
-            wide = min(ymax, down) - max(ymin, up)
+            lens = min(x_max, right) - max(x_min, left)
+            wide = min(y_max, down) - max(y_min, up)
             intersection = lens * wide
 
         return intersection and intersection / (square + 1e-5) > self.thresh
 
-    def restrainRect(self, rectdict, imgwidth, imgheight, coordinates):
+    @staticmethod
+    def restrain_rect(rect_dict, image_width, image_height, coordinates):
         left, up, right, down = coordinates
-        xmin = int(rectdict['tl']['x'] * imgwidth)
-        ymin = int(rectdict['tl']['y'] * imgheight)
-        xmax = int(rectdict['br']['x'] * imgwidth)
-        ymax = int(rectdict['br']['y'] * imgheight)
-        xmin = max(xmin, left)
-        xmax = min(xmax, right)
-        ymin = max(ymin, up)
-        ymax = min(ymax, down)
+        x_min = int(rect_dict['tl']['x'] * image_width)
+        y_min = int(rect_dict['tl']['y'] * image_height)
+        x_max = int(rect_dict['br']['x'] * image_width)
+        y_max = int(rect_dict['br']['y'] * image_height)
+        x_min = max(x_min, left)
+        x_max = min(x_max, right)
+        y_min = max(y_min, up)
+        y_max = min(y_max, down)
         return {
             'tl': {
-                'x': (xmin - left) / (right - left),
-                'y': (ymin - up) / (down - up)
+                'x': (x_min - left) / (right - left),
+                'y': (y_min - up) / (down - up)
             },
             'br': {
-                'x': (xmax - left) / (right - left),
-                'y': (ymax - up) / (down - up)
+                'x': (x_max - left) / (right - left),
+                'y': (y_max - up) / (down - up)
             }
         }
 
-    def judgePoint(self, rectdict, imgwidth, imgheight, coordinates):
+    @staticmethod
+    def judge_point(rect_dict, image_width, image_height, coordinates):
         left, up, right, down = coordinates
-        x = int(rectdict['x'] * imgwidth)
-        y = int(rectdict['y'] * imgheight)
+        x = int(rect_dict['x'] * image_width)
+        y = int(rect_dict['y'] * image_height)
 
         if left < x < right and up < y < down:
             return True
         else:
             return False
 
-    def restrainPoint(self, rectdict, imgwidth, imgheight, coordinates):
+    @staticmethod
+    def restrain_point(rect_dict, image_width, image_height, coordinates):
         left, up, right, down = coordinates
-        x = int(rectdict['x'] * imgwidth)
-        y = int(rectdict['y'] * imgheight)
+        x = int(rect_dict['x'] * image_width)
+        y = int(rect_dict['y'] * image_height)
         return {
             'x': (x - left) / (right - left),
             'y': (y - up) / (down - up)
         }
 
-    def personAnnoSplit(self, objlist, imgwidth, imgheight, coordinates):
-        newobjlist = []
-        for object_dict in objlist:
-            objcate = object_dict['category']
-            if objcate == 'person':
+    def person_annotations_split(self, objects_list, image_width, image_height, coordinates):
+        new_objects_list = []
+        for object_dict in objects_list:
+            object_category = object_dict['category']
+            if object_category == 'person':
                 pose = object_dict['pose']
                 riding = object_dict['riding type']
                 age = object_dict['age']
-                fullrect = object_dict['rects']['full body']
-                visiblerect = object_dict['rects']['visible body']
-                headrect = object_dict['rects']['head']
+                full_rect = object_dict['rects']['full body']
+                visible_rect = object_dict['rects']['visible body']
+                head_rect = object_dict['rects']['head']
                 # only keep a person whose 3 box all satisfy the requirement
-                if self.judgeRect(fullrect, imgwidth, imgheight, coordinates) & \
-                   self.judgeRect(visiblerect, imgwidth, imgheight, coordinates) & \
-                   self.judgeRect(headrect, imgwidth, imgheight, coordinates):
-                    newobjlist.append({
-                        "category": objcate,
+                if self.judge_rect(full_rect, image_width, image_height, coordinates) & \
+                   self.judge_rect(visible_rect, image_width, image_height, coordinates) & \
+                   self.judge_rect(head_rect, image_width, image_height, coordinates):
+                    new_objects_list.append({
+                        "category": object_category,
                         "pose": pose,
                         "riding type": riding,
                         "age": age,
                         "rects": {
-                            "head": self.restrainRect(headrect, imgwidth, imgheight, coordinates),
-                            "visible body": self.restrainRect(visiblerect, imgwidth, imgheight, coordinates),
-                            "full body": self.restrainRect(fullrect, imgwidth, imgheight, coordinates)
+                            "head": self.restrain_rect(head_rect, image_width, image_height, coordinates),
+                            "visible body": self.restrain_rect(visible_rect, image_width, image_height, coordinates),
+                            "full body": self.restrain_rect(full_rect, image_width, image_height, coordinates)
                         }
                     })
             else:
                 rect = object_dict['rect']
-                if self.judgeRect(rect, imgwidth, imgheight, coordinates):
-                    newobjlist.append({
-                        "category": objcate,
-                        "rect": self.restrainRect(rect, imgwidth, imgheight, coordinates)
+                if self.judge_rect(rect, image_width, image_height, coordinates):
+                    new_objects_list.append({
+                        "category": object_category,
+                        "rect": self.restrain_rect(rect, image_width, image_height, coordinates)
                     })
-        return newobjlist
+        return new_objects_list
 
-    def vehicleAnnoSplit(self, objlist, imgwidth, imgheight, coordinates):
-        newobjlist = []
-        for object_dict in objlist:
-            objcate = object_dict['category']
+    def vehicle_annotations_split(self, objects_list, image_width, image_height, coordinates):
+        new_objects_list = []
+        for object_dict in objects_list:
+            object_category = object_dict['category']
             rect = object_dict['rect']
-            if self.judgeRect(rect, imgwidth, imgheight, coordinates):
-                newobjlist.append({
-                    "category": objcate,
-                    "rect": self.restrainRect(rect, imgwidth, imgheight, coordinates)
+            if self.judge_rect(rect, image_width, image_height, coordinates):
+                new_objects_list.append({
+                    "category": object_category,
+                    "rect": self.restrain_rect(rect, image_width, image_height, coordinates)
                 })
-        return newobjlist
+        return new_objects_list
 
-    def headbboxAnnoSplit(self, objlist, imgwidth, imgheight, coordinates):
-        newobjlist = []
-        for object_dict in objlist:
+    def head_bbox_annotations_split(self, objects_list, image_width, image_height, coordinates):
+        new_objects_list = []
+        for object_dict in objects_list:
             rect = object_dict['rect']
-            if self.judgeRect(rect, imgwidth, imgheight, coordinates):
-                newobjlist.append({
-                    "rect": self.restrainRect(rect, imgwidth, imgheight, coordinates)
+            if self.judge_rect(rect, image_width, image_height, coordinates):
+                new_objects_list.append({
+                    "rect": self.restrain_rect(rect, image_width, image_height, coordinates)
                 })
-        return newobjlist
+        return new_objects_list
 
-    def headpointAnnoSplit(self, objlist, imgwidth, imgheight, coordinates):
-        newobjlist = []
-        for object_dict in objlist:
+    def head_point_annotations_split(self, object_list, image_width, image_height, coordinates):
+        new_object_list = []
+        for object_dict in object_list:
             rect = object_dict['rect']
-            if self.judgePoint(rect, imgwidth, imgheight, coordinates):
-                newobjlist.append({
-                    "rect": self.restrainPoint(rect, imgwidth, imgheight, coordinates)
+            if self.judge_point(rect, image_width, image_height, coordinates):
+                new_object_list.append({
+                    "rect": self.restrain_point(rect, image_width, image_height, coordinates)
                 })
-        return newobjlist
+        return new_object_list
 
-    def savesubimage(self, img, subimgname, coordinates):
+    def save_sub_image(self, img, sub_image_name, coordinates):
         left, up, right, down = coordinates
-        subimg = copy.deepcopy(img[up: down, left: right])
-        outdir = os.path.join(self.outimagepath, subimgname)
-        cv2.imwrite(outdir, subimg)
+        sub_image = copy.deepcopy(img[up: down, left: right])
+        out_dir = os.path.join(self.out_image_path, sub_image_name)
+        cv2.imwrite(out_dir, sub_image)

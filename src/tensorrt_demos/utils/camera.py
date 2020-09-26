@@ -14,7 +14,6 @@ import subprocess
 import numpy as np
 import cv2
 
-
 # The following flag ise used to control whether to use a GStreamer
 # pipeline to open USB webcam source.  If set to False, we just open
 # the webcam using cv2.VideoCapture(index) machinery. i.e. relying
@@ -122,7 +121,6 @@ def grab_img(cam):
     while cam.thread_running:
         _, cam.img_handle = cam.cap.read()
         if cam.img_handle is None:
-            #logging.warning('Camera: cap.read() returns None...')
             break
     cam.thread_running = False
 
@@ -174,8 +172,8 @@ class Camera():
             if not os.path.exists(a.imageDir):
                 raise ValueError("Image dir path does not exist!")
             for image in os.listdir(a.imageDir):
-                fullImagePath = os.path.join(a.imageDir, image)
-                self.imageNames.append(fullImagePath)
+                full_image_path = os.path.join(a.imageDir, image)
+                self.imageNames.append(full_image_path)
             self.cap = 'images'
             self.is_opened = True
         elif a.video:
@@ -198,11 +196,11 @@ class Camera():
         else:
             raise RuntimeError('no camera type specified!')
 
-    def isOpened(self):
+    def get_is_opened(self):
         return self.is_opened
 
     def _start(self):
-        if not self.cap.isOpened():
+        if not self.cap.get_is_opened():
             logging.warning('Camera: starting while cap is not opened!')
             return
 
@@ -229,7 +227,6 @@ class Camera():
     def _stop(self):
         if self.thread_running:
             self.thread_running = False
-            #self.thread.join()
 
     def read(self):
         """Read a frame from the camera object.
@@ -265,13 +262,12 @@ class Camera():
                     self.img_height, self.img_width, _ = self.img_handle.shape
                     return np.copy(self.img_handle)
             return None
-            
+
         else:
             if self.copy_frame:
                 return self.img_handle.copy()
             else:
                 return self.img_handle
-
 
     def release(self):
         self._stop()

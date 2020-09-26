@@ -77,7 +77,7 @@ def draw_boxed_text(img, text, topleft, color):
     return img
 
 
-class BBoxVisualization():
+class BBoxVisualization:
     """BBoxVisualization class implements nice drawing of boudning boxes.
 
     # Arguments
@@ -88,9 +88,9 @@ class BBoxVisualization():
         self.cls_dict = cls_dict
         self.colors = gen_colors(len(cls_dict))
 
-    def draw_bboxes(self, img, boxes, confs, clss):
+    def draw_bboxes(self, img, boxes, confidences, classes):
         """Draw detected bounding boxes on the original image."""
-        for bb, cf, cl in zip(boxes, confs, clss):
+        for bb, cf, cl in zip(boxes, confidences, classes):
             cl = int(cl)
             if cl >= len(self.colors):
                 cl = len(self.colors)-1

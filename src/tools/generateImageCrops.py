@@ -16,10 +16,10 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     image_root = args.directory
-    person_anno_file = 'person_bbox_train.json'
-    annomode = 'person'
+    person_annotations_file = 'person_bbox_train.json'
+    annotation_mode = 'person'
 
-    outpath = 'split'
-    outannofile = 'split.json'
-    split = ImgSplit(image_root, person_anno_file, annomode, outpath, outannofile)
-    split.splitdata(0.5)
+    out_path = 'split'
+    out_annotations_file = 'split.json'
+    split = ImgSplit(image_root, person_annotations_file, annotation_mode, out_path, out_annotations_file)
+    split.split_data(0.5)

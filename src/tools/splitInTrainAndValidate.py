@@ -4,9 +4,11 @@ import argparse
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser("Split a given dataset into training and validation images")
-    parser.add_argument("-path", required=True, type=str, help="Path to annotations file or the image folder (when using the -darknet option)")
+    parser.add_argument("-path", required=True, type=str, help="Path to annotations file or the image folder (when "
+                                                               "using the -darknet option)")
     parser.add_argument("-output", required=True, type=str, help="Output directory")
-    parser.add_argument("-split", required=True, type=float, default=80, help="Amount of training data in percent, e.g. 80")
+    parser.add_argument("-split", required=True, type=float, default=80, help="Amount of training data in percent, "
+                                                                              "e.g. 80")
     parser.add_argument("-darknet", type=bool, help="Should the output be compatible with the darknet required format?")
 
     args = parser.parse_args()
@@ -25,7 +27,7 @@ if __name__ == '__main__':
         if darknet:
             for file in os.listdir(args.path):
                 rand = random.random()
-                if rand >= 0 and rand <= float(args.split) / 100:
+                if 0 <= rand <= float(args.split) / 100:
                     train.write(os.path.basename(file) + "\n")
                     trainAmount += 1
                 else:
@@ -35,7 +37,7 @@ if __name__ == '__main__':
             with open(args.path, "r") as file:
                 for line in file:
                     rand = random.random()
-                    if rand >= 0 and rand <= float(args.split) / 100:
+                    if 0 <= rand <= float(args.split) / 100:
                         train.write(line)
                         trainAmount += 1
                     else:
