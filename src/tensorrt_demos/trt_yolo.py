@@ -21,11 +21,8 @@ from utils.visualization import BBoxVisualization
 from utils.yolo_with_plugins import TrtYOLO
 
 WINDOW_NAME = 'TrtYOLODemo'
-ACTIVATE_DISPLAY = False
-WRITE_IMAGES = False
 validCocoJson = dict()
 resultJson = list()
-IMAGE_OUTPUT = "/home/out/images"
 
 
 class NpEncoder(json.JSONEncoder):
@@ -61,6 +58,14 @@ def parse_args():
     parser.add_argument(
         '--write_images', action="store_true",
         help='Write images with detected bounding boxes to output directory')
+    parser.add_argument("--image_output", type=str, default="/home/out/images",
+                        help="Output directory for images with bounding boxes")
+    parser.add_argument("--result_json", type=str, default="/home/out/result.json",
+                        help="Output file for annotations")
+    parser.add_argument("--confidence_threshold", type=float, default=0.3,
+                        help="Output file for annotations")
+    parser.add_argument("--activate_display", action="store_true",
+                        help="Output file for annotations")
     args = parser.parse_args()
     return args
 
@@ -106,7 +111,7 @@ def loop_and_detect(camera, trt_yolo, args, confidence_thresh, visual):
     fps = 0.0
 
     while len(camera.imageNames) != 0:
-        if ACTIVATE_DISPLAY and (cv2.getWindowProperty(WINDOW_NAME, 0) < 0):
+        if args.activate_display and (cv2.getWindowProperty(WINDOW_NAME, 0) < 0):
             break
         img = camera.read()
         if img is None:
@@ -114,20 +119,20 @@ def loop_and_detect(camera, trt_yolo, args, confidence_thresh, visual):
         tic = time.time()
         boxes, confidences, classes = trt_yolo.detect(img, confidence_thresh)
         toc = time.time()
-        if ACTIVATE_DISPLAY or args.write_images:
+        if args.activate_display or args.write_images:
             img = visual.draw_bboxes(img, boxes, confidences, classes)
             img = show_fps(img, fps)
-        if ACTIVATE_DISPLAY:
+        if args.activate_display:
             cv2.imshow(WINDOW_NAME, img)
         curr_fps = 1.0 / (toc - tic)
         # calculate an exponentially decaying average of fps number
         fps = curr_fps if fps == 0.0 else (fps * 0.95 + curr_fps * 0.05)
-        if ACTIVATE_DISPLAY:
+        if args.activate_display:
             key = cv2.waitKey(1)
             if key == 27:  # ESC key: quit program
                 break
         if args.write_images:
-            path = os.path.join(IMAGE_OUTPUT, os.path.basename(camera.currentImage))
+            path = os.path.join(args.image_output, os.path.basename(camera.currentImage))
             print("Image path: ", path)
             cv2.imwrite(path, img)
         print("FPS: {:3.2f} and {} Images left.".format(fps, len(camera.imageNames)))
@@ -135,7 +140,7 @@ def loop_and_detect(camera, trt_yolo, args, confidence_thresh, visual):
 
     # Write coco json file when done
     coco_file = json.dumps(resultJson, cls=NpEncoder)
-    f = open("/home/out/result.json", "w+")
+    f = open(args.result_json, "w+")
     f.write(coco_file)
     f.close()
 
@@ -152,7 +157,7 @@ def main():
     process_valid_json(args.valid_coco)
 
     if args.write_images:
-        if not os.path.exists(IMAGE_OUTPUT): os.mkdir(IMAGE_OUTPUT)
+        if not os.path.exists(args.image_output): os.mkdir(args.image_output)
 
     # Create camera for video/image input
     cam = Camera(args)
@@ -174,18 +179,18 @@ def main():
     # Create yolo
     trt_yolo = TrtYOLO(args.model, (h, w), args.category_num)
 
-    if ACTIVATE_DISPLAY:
+    if args.activate_display:
         open_window(
             WINDOW_NAME, 'Camera TensorRT YOLO Demo',
             cam.img_width, cam.img_height)
     visual = BBoxVisualization(class_dict)
 
     # Run detection
-    loop_and_detect(cam, trt_yolo, args, confidence_thresh=0.3, visual=visual)
+    loop_and_detect(cam, trt_yolo, args, confidence_thresh=args.confidence_threshold, visual=visual)
 
     # Clean up
     cam.release()
-    if ACTIVATE_DISPLAY:
+    if args.activate_display:
         cv2.destroyAllWindows()
 
 
