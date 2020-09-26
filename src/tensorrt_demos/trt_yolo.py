@@ -109,6 +109,8 @@ def loop_and_detect(camera, trt_yolo, args, confidence_thresh, visual):
       visual: for visualization.
     """
     fps = 0.0
+    cumulative_frame_time = 0.0
+    iterations = 0
 
     while len(camera.imageNames) != 0:
         if args.activate_display and (cv2.getWindowProperty(WINDOW_NAME, 0) < 0):
@@ -124,7 +126,10 @@ def loop_and_detect(camera, trt_yolo, args, confidence_thresh, visual):
             img = show_fps(img, fps)
         if args.activate_display:
             cv2.imshow(WINDOW_NAME, img)
-        curr_fps = 1.0 / (toc - tic)
+
+        frame_time = (toc - tic)
+        cumulative_frame_time += frame_time
+        curr_fps = 1.0 / frame_time
         # calculate an exponentially decaying average of fps number
         fps = curr_fps if fps == 0.0 else (fps * 0.95 + curr_fps * 0.05)
         if args.activate_display:
@@ -138,11 +143,15 @@ def loop_and_detect(camera, trt_yolo, args, confidence_thresh, visual):
         print("FPS: {:3.2f} and {} Images left.".format(fps, len(camera.imageNames)))
         append_coco(boxes, confidences, classes, camera)
 
+        iterations += 1
+
     # Write coco json file when done
     coco_file = json.dumps(resultJson, cls=NpEncoder)
     f = open(args.result_json, "w+")
     f.write(coco_file)
     f.close()
+
+    print(f"Average FPS: {(1 / (cumulative_frame_time / iterations))}")
 
 
 def main():
