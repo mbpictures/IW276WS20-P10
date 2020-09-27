@@ -68,12 +68,14 @@ class ImgSplit():
             annodict = json.load(load_f)
         self.annotations = annodict
 
-    def split_data(self, scale, image_request=None, image_filters=[]):
+    def split_data(self, scale, image_request=None, image_filters=None):
         """
         :param scale: resize rate before cut
         :param image_request: list, images names you want to request, eg. ['1-HIT_canteen/IMG_1_4.jpg', ...]
         :param image_filters: essential keywords in image name
         """
+        if image_filters is None:
+            image_filters = []
         if image_request is None or not isinstance(image_request, list):
             image_names = list(self.annotations.keys())
         else:
@@ -162,8 +164,8 @@ class ImgSplit():
 
                 if up + self.sub_height >= image_height:
                     break
-                else:
-                    up = up + self.slide_height
+
+                up = up + self.slide_height
                 
                 # no persons on image? SKIP!
                 if len(new_objects_list) == 0:
@@ -180,8 +182,8 @@ class ImgSplit():
                 
             if left + self.sub_width >= image_width:
                 break
-            else:
-                left = left + self.slide_width
+
+            left = left + self.slide_width
 
         return sub_image_annotations
 
@@ -230,10 +232,7 @@ class ImgSplit():
         x = int(rect_dict['x'] * image_width)
         y = int(rect_dict['y'] * image_height)
 
-        if left < x < right and up < y < down:
-            return True
-        else:
-            return False
+        return bool(left < x < right and up < y < down)
 
     @staticmethod
     def restrain_point(rect_dict, image_width, image_height, coordinates):

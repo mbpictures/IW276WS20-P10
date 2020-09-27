@@ -147,7 +147,7 @@ def rect_dict_2_list(rect_dict, image_width, image_height, scale, mode='tlbr'):
 
     if mode == 'tlbr':
         return x_min, y_min, x_max, y_max
-    elif mode == 'tlwh':
+    if mode == 'tlwh':
         return x_min, y_min, x_max - x_min, y_max - y_min
 
 

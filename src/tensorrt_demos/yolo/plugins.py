@@ -37,13 +37,11 @@ def get_yolo_whs(model_name, w, h):
     if 'yolov3' in model_name:
         if 'tiny' in model_name:
             return [[w // 32, h // 32], [w // 16, h // 16]]
-        else:
-            return [[w // 32, h // 32], [w // 16, h // 16], [w // 8, h // 8]]
+        return [[w // 32, h // 32], [w // 16, h // 16], [w // 8, h // 8]]
     elif 'yolov4' in model_name:
         if 'tiny' in model_name:
             return [[w // 32, h // 32], [w // 16, h // 16]]
-        else:
-            return [[w // 8, h // 8], [w // 16, h // 16], [w // 32, h // 32]]
+        return [[w // 8, h // 8], [w // 16, h // 16], [w // 32, h // 32]]
     else:
         raise ValueError(f'ERROR: unknown model ({model_name})!')
 
@@ -90,9 +88,9 @@ def get_scales(model_name):
     scale_lines = [l.strip() for l in cfg_lines if l.startswith('scale_x_y')]
     if len(scale_lines) == 0:
         return [1.0] * len(yolo_lines)
-    else:
-        assert len(scale_lines) == len(yolo_lines)
-        return [float(l.split('=')[-1]) for l in scale_lines]
+
+    assert len(scale_lines) == len(yolo_lines)
+    return [float(l.split('=')[-1]) for l in scale_lines]
 
 
 def get_plugin_creator(plugin_name, logger):

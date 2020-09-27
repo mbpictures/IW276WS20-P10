@@ -89,9 +89,9 @@ shutil.copy("yolov4.conv.137", workingDirectory)
 # In[ ]:
 
 
-subprocess.run(["sed", "-i" "'s/OPENCV=0/OPENCV=1/g'", os.path.join(workingDirectory, "Makefile")])
-subprocess.run(["sed", "-i" "'s/GPU=0/GPU=1/g'", os.path.join(workingDirectory, "Makefile")])
-subprocess.run(["sed", "-i" "'s/CUDNN=0/CUDNN=1/g'", os.path.join(workingDirectory, "Makefile")])
+subprocess.run(["sed", "-i", "'s/OPENCV=0/OPENCV=1/g'", os.path.join(workingDirectory, "Makefile")])
+subprocess.run(["sed", "-i", "'s/GPU=0/GPU=1/g'", os.path.join(workingDirectory, "Makefile")])
+subprocess.run(["sed", "-i", "'s/CUDNN=0/CUDNN=1/g'", os.path.join(workingDirectory, "Makefile")])
 subprocess.run(
     ["sed", "-i", "'s/ARCH= -gencode arch=compute_30,code=sm_30 \\\\/ARCH= -gencode arch=compute_70,code=sm_70 \\\\/g'",
      os.path.join(workingDirectory, "Makefile")])
@@ -143,7 +143,6 @@ subprocess.run(['wget', "-O", os.path.join(workingDirectory, "cfg/yolov4-custom5
 # In[ ]:
 
 
-import os
 
 # Instructions from the darknet repo change line max_batches to (classes*2000 but not less than number of training
 # images, and not less than 6000), f.e. max_batches=6000 if you train for 3 classes change line steps to 80% and 90%
