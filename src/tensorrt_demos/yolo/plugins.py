@@ -23,12 +23,12 @@ def get_input_wh(model_name):
     if 'x' in yolo_dim:
         dim_split = yolo_dim.split('x')
         if len(dim_split) != 2:
-            raise ValueError('ERROR: bad yolo_dim (%s)!' % yolo_dim)
+            raise ValueError(f'ERROR: bad yolo_dim ({yolo_dim})!')
         w, h = int(dim_split[0]), int(dim_split[1])
     else:
         h = w = int(yolo_dim)
     if h % 32 != 0 or w % 32 != 0:
-        raise ValueError('ERROR: bad yolo_dim (%s)!' % yolo_dim)
+        raise ValueError(f'ERROR: bad yolo_dim ({yolo_dim})!')
     return w, h
 
 
@@ -45,7 +45,7 @@ def get_yolo_whs(model_name, w, h):
         else:
             return [[w // 8, h // 8], [w // 16, h // 16], [w // 32, h // 32]]
     else:
-        raise ValueError('ERROR: unknown model (%s)!' % args.model)
+        raise ValueError(f'ERROR: unknown model ({model_name})!')
 
 
 def verify_classes(model_name, num_classes):

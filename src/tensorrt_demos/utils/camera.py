@@ -158,7 +158,7 @@ class Camera():
             raise RuntimeError('camera is already opened!')
         a = self.args
         if a.image:
-            logging.info('Camera: using a image file %s' % a.image)
+            logging.info(f'Camera: using a image file {a.image}')
             self.cap = 'image'
             self.img_handle = cv2.imread(a.image)
             self.imageNames.append(a.image)
@@ -177,16 +177,16 @@ class Camera():
             self.cap = 'images'
             self.is_opened = True
         elif a.video:
-            logging.info('Camera: using a video file %s' % a.video)
+            logging.info(f'Camera: using a video file {a.video}')
             self.video_file = a.video
             self.cap = cv2.VideoCapture(a.video)
             self._start()
         elif a.rtsp:
-            logging.info('Camera: using RTSP stream %s' % a.rtsp)
+            logging.info(f'Camera: using RTSP stream {a.rtsp}')
             self.cap = open_cam_rtsp(a.rtsp, a.width, a.height, a.rtsp_latency)
             self._start()
         elif a.usb is not None:
-            logging.info('Camera: using USB webcam /dev/video%d' % a.usb)
+            logging.info(f'Camera: using USB webcam /dev/video{a.usb}')
             self.cap = open_cam_usb(a.usb, a.width, a.height)
             self._start()
         elif a.onboard is not None:
