@@ -55,7 +55,7 @@ def verify_classes(model_name, num_classes):
         cfg_lines = f.readlines()
     classes_lines = [l.strip() for l in cfg_lines if l.startswith('classes')]
     classes = [int(l.split('=')[-1]) for l in classes_lines]
-    return all([c == num_classes for c in classes])
+    return all(c == num_classes for c in classes)
 
 
 def get_anchors(model_name):
@@ -119,7 +119,7 @@ def add_yolo_plugins(network, model_name, num_classes, logger):
         raise ValueError('bad number of network outputs: %d vs. %d' %
                          (network.num_outputs, len(anchors)))
     scales = get_scales(model_name)
-    if any([s < 1.0 for s in scales]):
+    if any(s < 1.0 for s in scales):
         raise ValueError('bad scale_x_y: %s' % str(scales))
 
     plugin_creator = get_plugin_creator('YoloLayer_TRT', logger)

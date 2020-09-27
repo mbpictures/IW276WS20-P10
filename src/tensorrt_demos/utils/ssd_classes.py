@@ -112,4 +112,4 @@ def get_cls_dict(model):
         cls_list = EGOHANDS_CLASSES_LIST
     else:
         raise ValueError('Bad model name')
-    return {i: n for i, n in enumerate(cls_list)}
+    return dict(enumerate(cls_list))
