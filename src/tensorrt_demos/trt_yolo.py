@@ -29,12 +29,11 @@ class NpEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, numpy.integer):
             return int(obj)
-        elif isinstance(obj, numpy.floating):
+        if isinstance(obj, numpy.floating):
             return float(obj)
-        elif isinstance(obj, numpy.ndarray):
+        if isinstance(obj, numpy.ndarray):
             return obj.tolist()
-        else:
-            return super(NpEncoder, self).default(obj)
+        return super(NpEncoder, self).default(obj)
 
 
 def parse_args():
@@ -156,7 +155,6 @@ def loop_and_detect(camera, trt_yolo, args, confidence_thresh, visual):
 
 
 def main():
-    global cocoCategoryId
     args = parse_args()
     if args.category_num <= 0:
         raise SystemExit(f'ERROR: bad category_num ({args.category_num})!')

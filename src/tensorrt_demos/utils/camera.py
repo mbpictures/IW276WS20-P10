@@ -81,8 +81,8 @@ def open_cam_usb(dev, width, height):
                    'video/x-raw, width=(int){}, height=(int){} ! '
                    'videoconvert ! appsink').format(dev, width, height)
         return cv2.VideoCapture(gst_str, cv2.CAP_GSTREAMER)
-    else:
-        return cv2.VideoCapture(dev)
+
+    return cv2.VideoCapture(dev)
 
 
 def open_cam_onboard(width, height):
@@ -158,7 +158,7 @@ class Camera():
             raise RuntimeError('camera is already opened!')
         a = self.args
         if a.image:
-            logging.info('Camera: using a image file %s' % a.image)
+            logging.info(f'Camera: using a image file {a.image}')
             self.cap = 'image'
             self.img_handle = cv2.imread(a.image)
             self.imageNames.append(a.image)
@@ -177,16 +177,16 @@ class Camera():
             self.cap = 'images'
             self.is_opened = True
         elif a.video:
-            logging.info('Camera: using a video file %s' % a.video)
+            logging.info(f'Camera: using a video file {a.video}')
             self.video_file = a.video
             self.cap = cv2.VideoCapture(a.video)
             self._start()
         elif a.rtsp:
-            logging.info('Camera: using RTSP stream %s' % a.rtsp)
+            logging.info(f'Camera: using RTSP stream {a.rtsp}')
             self.cap = open_cam_rtsp(a.rtsp, a.width, a.height, a.rtsp_latency)
             self._start()
         elif a.usb is not None:
-            logging.info('Camera: using USB webcam /dev/video%d' % a.usb)
+            logging.info(f'Camera: using USB webcam /dev/video{a.usb}')
             self.cap = open_cam_usb(a.usb, a.width, a.height)
             self._start()
         elif a.onboard is not None:
@@ -247,10 +247,10 @@ class Camera():
             if img is not None and self.do_resize:
                 img = cv2.resize(img, (self.img_width, self.img_height))
             return img
-        elif self.cap == 'image':
+        if self.cap == 'image':
             self.currentImage = self.args.image
             return np.copy(self.img_handle)
-        elif self.cap == 'images':
+        if self.cap == 'images':
             if len(self.imageNames) != 0:
                 img = self.imageNames.pop()
                 self.img_handle = cv2.imread(img)
@@ -263,11 +263,10 @@ class Camera():
                     return np.copy(self.img_handle)
             return None
 
-        else:
-            if self.copy_frame:
-                return self.img_handle.copy()
-            else:
-                return self.img_handle
+        if self.copy_frame:
+            return self.img_handle.copy()
+
+        return self.img_handle
 
     def release(self):
         self._stop()
