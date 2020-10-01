@@ -26,6 +26,9 @@ TODO: Insert Link to Demo Video
 * OpenCV 4.1 (or above)
 * Jetson Nano
 * Jetpack 4.4
+* make
+* cmake
+* g++
 ### Optional
 * Docker
 * dtrx
