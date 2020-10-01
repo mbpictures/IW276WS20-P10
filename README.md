@@ -61,7 +61,14 @@ Note that this step is not required for building the docker image. Docker will u
 3. Start the docker container (run "python3 start_docker.py -h" for help)
 > sudo python3 start_docker.py --input "Directory where the images to detect are stored" --output "Directory where the output is stored" --image "name and tag of the docker container to run" --valid-json "Path to the valid json file" [--tiny] [--write_images]
 ### Python
-TODO
+To run the prediction without docker, please execute the following commands.
+```bash
+cd src/tensorrt_demos/yolo
+```
+```bash
+sudo python3 trt_yolo.py --imageDir "directory containing images" -v "path to ground truth coco json" -m "path to tensorrt model" [--write_images] [--image_output "directory where the images with bounding boxes should be stored (only when --write_images is enabled)" Default: "/home/out/images"] [--result_json "path to the json, which contains all detected annotations" Default: "/home/out/result.json"] [--confidence_threshhold Default: 0.3] [--activate_display]
+```
+
 
 ## Acknowledgments
 
