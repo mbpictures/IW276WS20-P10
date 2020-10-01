@@ -160,7 +160,7 @@ def loop_and_display(condition, vis):
 def main():
     args = parse_args()
     cam = Camera(args)
-    if not cam.isOpened():
+    if not cam.get_is_opened():
         raise SystemExit('ERROR: failed to open camera!')
 
     cuda.init()  # init pycuda driver

@@ -82,7 +82,7 @@ def loop_and_detect(cam, trt_ssd, conf_th, vis):
 def main():
     args = parse_args()
     cam = Camera(args)
-    if not cam.isOpened():
+    if not cam.get_is_opened():
         raise SystemExit('ERROR: failed to open camera!')
 
     cls_dict = get_cls_dict(args.model.split('_')[-1])

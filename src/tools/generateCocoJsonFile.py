@@ -6,7 +6,6 @@
 
 #### MODIFIED VERSION #####
 import json
-import numpy as np
 import argparse
 
 CATEGORY = {
@@ -15,6 +14,7 @@ CATEGORY = {
     'head': 3,
     'vehicle': 4
 }
+
 
 def parse_args():
     """Defines and parses command-line arguments."""
@@ -36,7 +36,8 @@ Layout for test data
 """, formatter_class=argparse.RawTextHelpFormatter)
 
     parser.add_argument('personfile', type=str, help='File path to person annotation json file')
-    parser.add_argument('transferred', type=str, help='Directory containing transferred gt files', default='transferred.json')
+    parser.add_argument('transferred', type=str, help='Directory containing transferred gt files',
+                        default='transferred.json')
     parser.add_argument('--annType', type=str, help='annotation type', default='bbox')
     parser.add_argument('--maxDets', type=list, help='[10, 100, 500] M = 3 thresholds on max detections per image',
                         default=[10, 100, 500])
@@ -44,63 +45,63 @@ Layout for test data
                         default=[0, 200, 400, 1e5])
     return parser.parse_args()
 
-def generate_coco_anno(personsrcfile, tgtfile, keywords=None):
+
+def generate_coco_annotation(person_src_file, tgt_file, keywords=None):
     """
     transfer ground truth to COCO format
-    :param personsrcfile: person ground truth file path
-    :param vehiclesrcfile: vehicle ground truth file path
-    :param tgtfile: generated file save path
+    :param person_src_file: person ground truth file path
+    :param tgt_file: generated file save path
     :param keywords: list of str, only keep image with keyword in image name
     :return:
     """
-    attrDict = dict()
-    attrDict["categories"] = [
+    attr_dict = dict()
+    attr_dict["categories"] = [
         {"supercategory": "none", "id": 1, "name": 'visible body'},
         {"supercategory": "none", "id": 2, "name": 'full body'},
         {"supercategory": "none", "id": 3, "name": 'head'},
         {"supercategory": "none", "id": 4, "name": 'vehicle'}
     ]
-    with open(personsrcfile, 'r') as load_f:
-        person_anno_dict = json.load(load_f)
+    with open(person_src_file, 'r') as load_f:
+        person_annotations_dict = json.load(load_f)
 
     images = list()
     annotations = list()
-    imageids = list()
+    image_ids = list()
 
-    objid = 1
-    for (imagename, imagedict) in person_anno_dict.items():
+    object_id = 1
+    for (image_name, image_dict) in person_annotations_dict.items():
         if keywords:
             flag = False
             for kw in keywords:
-                if kw in imagename:
+                if kw in image_name:
                     flag = True
             if not flag:
                 continue
         image = dict()
-        image['file_name'] = imagename
-        imgid = imagedict['image id']
-        imageids.append(imgid)
-        imgwidth = imagedict['image size']['width']
-        imgheight = imagedict['image size']['height']
-        image['height'] = imgheight
-        image['width'] = imgwidth
-        image['id'] = imgid
+        image['file_name'] = image_name
+        img_id = image_dict['image id']
+        image_ids.append(img_id)
+        image_width = image_dict['image size']['width']
+        image_height = image_dict['image size']['height']
+        image['height'] = image_height
+        image['width'] = image_width
+        image['id'] = img_id
         images.append(image)
-        for objdict in imagedict['objects list']:
-            cate = objdict['category']
+        for object_dict in image_dict['objects list']:
+            cate = object_dict['category']
             if cate == 'person':
                 for label in ['visible body', 'full body', 'head']:
-                    rect = objdict['rects'][label]
+                    rect = object_dict['rects'][label]
                     annotation = dict()
-                    annotation["image_id"] = imgid
+                    annotation["image_id"] = img_id
                     annotation["ignore"] = 0
                     annotation["iscrowd"] = 0
-                    x, y, w, h = RectDict2List(rect, imgwidth, imgheight, scale=1, mode='tlwh')
+                    x, y, w, h = rect_dict_2_list(rect, image_width, image_height, scale=1, mode='tlwh')
                     annotation["bbox"] = [x, y, w, h]
                     annotation["area"] = float(w * h)
                     annotation["category_id"] = CATEGORY[label]
-                    annotation["id"] = objid
-                    objid += 1
+                    annotation["id"] = object_id
+                    object_id += 1
                     annotation["segmentation"] = [[x, y, x, (y + h), (x + w), (y + h), (x + w), y]]
                     annotations.append(annotation)
             else:
@@ -109,44 +110,46 @@ def generate_coco_anno(personsrcfile, tgtfile, keywords=None):
                     annotation["iscrowd"] = 1
                 else:
                     annotation["iscrowd"] = 0
-                rect = objdict['rect']
-                annotation["image_id"] = imgid
+                rect = object_dict['rect']
+                annotation["image_id"] = img_id
                 annotation["ignore"] = 1
-                x, y, w, h = RectDict2List(rect, imgwidth, imgheight, scale=1, mode='tlwh')
+                x, y, w, h = rect_dict_2_list(rect, image_width, image_height, scale=1, mode='tlwh')
                 annotation["bbox"] = [x, y, w, h]
                 annotation["area"] = float(w * h)
                 annotation["category_id"] = CATEGORY['visible body']
-                annotation["id"] = objid
-                objid += 1
+                annotation["id"] = object_id
+                object_id += 1
                 annotation["segmentation"] = [[x, y, x, (y + h), (x + w), (y + h), (x + w), y]]
                 annotations.append(annotation)
 
-        # ADDITIONAL: convert vehicle annos as well, but as we don't need them, this code isn't necessary anymore
+        # ADDITIONAL: convert vehicle annotations as well, but as we don't need them, this code isn't necessary anymore
 
-    attrDict["images"] = images
-    attrDict["annotations"] = annotations
-    attrDict["type"] = "instances"
+    attr_dict["images"] = images
+    attr_dict["annotations"] = annotations
+    attr_dict["type"] = "instances"
 
-    # print attrDict
-    jsonString = json.dumps(attrDict, indent=2)
-    with open(tgtfile, "w") as f:
-        f.write(jsonString)
+    # print attr_dict
+    json_string = json.dumps(attr_dict, indent=2)
+    with open(tgt_file, "w") as f:
+        f.write(json_string)
 
     print("Converted JSON successfully")
-    return imageids
+    return image_ids
 
-def RectDict2List(rectdict, imgwidth, imgheight, scale, mode='tlbr'):
-    x1, y1, x2, y2 = restrain_between_0_1([rectdict['tl']['x'], rectdict['tl']['y'],
-                                           rectdict['br']['x'], rectdict['br']['y']])
-    xmin = int(x1 * imgwidth * scale)
-    ymin = int(y1 * imgheight * scale)
-    xmax = int(x2 * imgwidth * scale)
-    ymax = int(y2 * imgheight * scale)
+
+def rect_dict_2_list(rect_dict, image_width, image_height, scale, mode='tlbr'):
+    x1, y1, x2, y2 = restrain_between_0_1([rect_dict['tl']['x'], rect_dict['tl']['y'],
+                                           rect_dict['br']['x'], rect_dict['br']['y']])
+    x_min = int(x1 * image_width * scale)
+    y_min = int(y1 * image_height * scale)
+    x_max = int(x2 * image_width * scale)
+    y_max = int(y2 * image_height * scale)
 
     if mode == 'tlbr':
-        return xmin, ymin, xmax, ymax
-    elif mode == 'tlwh':
-        return xmin, ymin, xmax - xmin, ymax - ymin
+        return x_min, y_min, x_max, y_max
+    if mode == 'tlwh':
+        return x_min, y_min, x_max - x_min, y_max - y_min
+
 
 def restrain_between_0_1(values_list):
     return_list = []
@@ -166,4 +169,4 @@ if __name__ == '__main__':
     args = parse_args()
 
     # transfer ground truth to COCO format
-    generate_coco_anno(args.personfile, args.transferred)
+    generate_coco_annotation(args.personfile, args.transferred)

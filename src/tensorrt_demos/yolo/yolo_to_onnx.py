@@ -152,7 +152,8 @@ class DarkNetParser(object):
         self.layer_counter += 1
         return layer_dict, layer_name, remainder
 
-    def _parse_params(self, param_line):
+    @staticmethod
+    def _parse_params(param_line):
         """Identifies the parameters contained in one of the cfg file and returns
         them in the required format for each parameter type, e.g. as a list, an int or a float.
 
@@ -161,7 +162,6 @@ class DarkNetParser(object):
         """
         param_line = param_line.replace(' ', '')
         param_type, param_value_raw = param_line.split('=')
-        param_value = None
         if param_type == 'layers':
             layer_indexes = list()
             for index in param_value_raw.split(','):
@@ -170,7 +170,7 @@ class DarkNetParser(object):
         elif isinstance(param_value_raw, str) and not param_value_raw.isalpha():
             condition_param_value_positive = param_value_raw.isdigit()
             condition_param_value_negative = param_value_raw[0] == '-' and \
-                param_value_raw[1:].isdigit()
+                                             param_value_raw[1:].isdigit()
             if condition_param_value_positive or condition_param_value_negative:
                 param_value = int(param_value_raw)
             else:
@@ -229,7 +229,7 @@ class ConvParams(object):
         and checks if the combination is valid."""
         assert suffix
         assert param_category in ['bn', 'conv']
-        assert(suffix in ['scale', 'mean', 'var', 'weights', 'bias'])
+        assert (suffix in ['scale', 'mean', 'var', 'weights', 'bias'])
         if param_category == 'bn':
             assert self.batch_normalize
             assert suffix in ['scale', 'bias', 'mean', 'var']
@@ -240,24 +240,26 @@ class ConvParams(object):
         param_name = self.node_name + '_' + param_category + '_' + suffix
         return param_name
 
-class UpsampleParams(object):
-    #Helper class to store the scale parameter for an Upsample node.
+
+class UpSampleParams(object):
+    # Helper class to store the scale parameter for an UpSample node.
 
     def __init__(self, node_name, value):
-        """Constructor based on the base node name (e.g. 86_Upsample),
+        """Constructor based on the base node name (e.g. 86_UpSample),
         and the value of the scale input tensor.
 
         Keyword arguments:
-        node_name -- base name of this YOLO Upsample layer
-        value -- the value of the scale input to the Upsample layer as a numpy array
+        node_name -- base name of this YOLO UpSample layer
+        value -- the value of the scale input to the UpSample layer as a numpy array
         """
         self.node_name = node_name
         self.value = value
 
     def generate_param_name(self):
-        """Generates the scale parameter name for the Upsample node."""
+        """Generates the scale parameter name for the UpSample node."""
         param_name = self.node_name + '_' + 'scale'
         return param_name
+
 
 class WeightLoader(object):
     """Helper class used for loading the serialized weights of a binary file stream
@@ -273,7 +275,8 @@ class WeightLoader(object):
         """
         self.weights_file = self._open_weights_file(weights_file_path)
 
-    def load_upsample_scales(self, upsample_params):
+    @staticmethod
+    def load_up_sample_scales(up_sample_params):
         """Returns the initializers with the value of the scale input
         tensor given by upsample_params.
 
@@ -282,9 +285,9 @@ class WeightLoader(object):
         """
         initializer = list()
         inputs = list()
-        name = upsample_params.generate_param_name()
-        shape = upsample_params.value.shape
-        data = upsample_params.value
+        name = up_sample_params.generate_param_name()
+        shape = up_sample_params.value.shape
+        data = up_sample_params.value
         scale_init = helper.make_tensor(
             name, TensorProto.FLOAT, shape, data)
         scale_input = helper.make_tensor_value_info(
@@ -292,7 +295,6 @@ class WeightLoader(object):
         initializer.append(scale_init)
         inputs.append(scale_input)
         return initializer, inputs
-
 
     def load_conv_weights(self, conv_params):
         """Returns the initializers with weights from the weights file and
@@ -327,7 +329,8 @@ class WeightLoader(object):
         inputs.append(conv_input)
         return initializer, inputs
 
-    def _open_weights_file(self, weights_file_path):
+    @staticmethod
+    def _open_weights_file(weights_file_path):
         """Opens a YOLO DarkNet file stream and skips the header.
 
         Keyword argument:
@@ -335,7 +338,7 @@ class WeightLoader(object):
         """
         weights_file = open(weights_file_path, 'rb')
         length_header = 5
-        np.ndarray(shape=(length_header, ), dtype='int32',
+        np.ndarray(shape=(length_header,), dtype='int32',
                    buffer=weights_file.read(length_header * 4))
         return weights_file
 
@@ -374,7 +377,6 @@ class WeightLoader(object):
         elif param_category == 'conv':
             if suffix == 'weights':
                 param_shape = [channels_out, channels_in, filter_h, filter_w]
-                #print(param_shape)
             elif suffix == 'bias':
                 param_shape = [channels_out]
         param_size = np.product(np.array(param_shape))
@@ -432,11 +434,11 @@ class GraphBuilderONNX(object):
                 self.major_node_specs.append(major_node_specs)
         # remove dummy 'route' and 'yolo' nodes
         self.major_node_specs = [node for node in self.major_node_specs
-                                      if 'dummy' not in node.name]
+                                 if 'dummy' not in node.name]
         outputs = list()
         for tensor_name in self.output_tensors.keys():
             output_dims = [self.batch_size, ] + \
-                self.output_tensors[tensor_name]
+                          self.output_tensors[tensor_name]
             output_tensor = helper.make_tensor_value_info(
                 tensor_name, TensorProto.FLOAT, output_dims)
             outputs.append(output_tensor)
@@ -448,13 +450,13 @@ class GraphBuilderONNX(object):
             _, layer_type = layer_name.split('_', 1)
             params = self.param_dict[layer_name]
             if layer_type == 'convolutional':
-                #print('%s  ' % layer_name, end='')
+                # print('%s  ' % layer_name, end='')
                 initializer_layer, inputs_layer = weight_loader.load_conv_weights(
                     params)
                 initializer.extend(initializer_layer)
                 inputs.extend(inputs_layer)
             elif layer_type == 'upsample':
-                initializer_layer, inputs_layer = weight_loader.load_upsample_scales(
+                initializer_layer, inputs_layer = weight_loader.load_up_sample_scales(
                     params)
                 initializer.extend(initializer_layer)
                 inputs.extend(inputs_layer)
@@ -493,7 +495,7 @@ class GraphBuilderONNX(object):
         else:
             node_creators = dict()
             node_creators['convolutional'] = self._make_conv_node
-            node_creators['maxpool'] = self._make_maxpool_node
+            node_creators['maxpool'] = self._make_max_pool_node
             node_creators['shortcut'] = self._make_shortcut_node
             node_creators['route'] = self._make_route_node
             node_creators['upsample'] = self._make_upsample_node
@@ -576,7 +578,7 @@ class GraphBuilderONNX(object):
         conv_params = ConvParams(layer_name, batch_normalize, weights_shape)
 
         strides = [stride, stride]
-        dilations = [1, 1]
+        dilation = [1, 1]
         weights_name = conv_params.generate_param_name('conv', 'weights')
         inputs.append(weights_name)
         if not batch_normalize:
@@ -590,7 +592,7 @@ class GraphBuilderONNX(object):
             kernel_shape=kernel_shape,
             strides=strides,
             auto_pad='SAME_LOWER',
-            dilations=dilations,
+            dilations=dilation,
             name=layer_name
         )
         self._nodes.append(conv_node)
@@ -603,7 +605,7 @@ class GraphBuilderONNX(object):
             for suffix in bn_param_suffixes:
                 bn_param_name = conv_params.generate_param_name('bn', suffix)
                 inputs.append(bn_param_name)
-            batchnorm_node = helper.make_node(
+            batch_norm_node = helper.make_node(
                 'BatchNormalization',
                 inputs=inputs,
                 outputs=[layer_name_bn],
@@ -611,7 +613,7 @@ class GraphBuilderONNX(object):
                 momentum=self.momentum_bn,
                 name=layer_name_bn
             )
-            self._nodes.append(batchnorm_node)
+            self._nodes.append(batch_norm_node)
             inputs = [layer_name_bn]
             layer_name_output = layer_name_bn
 
@@ -629,20 +631,20 @@ class GraphBuilderONNX(object):
             inputs = [layer_name_lrelu]
             layer_name_output = layer_name_lrelu
         elif layer_dict['activation'] == 'mish':
-            layer_name_softplus = layer_name + '_softplus'
+            layer_name_soft_plus = layer_name + '_softplus'
             layer_name_tanh = layer_name + '_tanh'
             layer_name_mish = layer_name + '_mish'
 
-            softplus_node = helper.make_node(
+            soft_plus_node = helper.make_node(
                 'Softplus',
                 inputs=inputs,
-                outputs=[layer_name_softplus],
-                name=layer_name_softplus,
+                outputs=[layer_name_soft_plus],
+                name=layer_name_soft_plus,
             )
-            self._nodes.append(softplus_node)
+            self._nodes.append(soft_plus_node)
             tanh_node = helper.make_node(
                 'Tanh',
-                inputs=[layer_name_softplus],
+                inputs=[layer_name_soft_plus],
                 outputs=[layer_name_tanh],
                 name=layer_name_tanh,
             )
@@ -657,7 +659,6 @@ class GraphBuilderONNX(object):
             )
             self._nodes.append(mish_node)
 
-            inputs = [layer_name_mish]
             layer_name_output = layer_name_mish
         elif layer_dict['activation'] == 'linear':
             pass
@@ -776,32 +777,32 @@ class GraphBuilderONNX(object):
         layer_name -- the layer's name (also the corresponding key in layer_configs)
         layer_dict -- a layer parameter dictionary (one element of layer_configs)
         """
-        upsample_factor = float(layer_dict['stride'])
+        up_sample_factor = float(layer_dict['stride'])
         # Create the scales array with node parameters
-        scales = np.array([1.0, 1.0, upsample_factor, upsample_factor]).astype(np.float32)
+        scales = np.array([1.0, 1.0, up_sample_factor, up_sample_factor]).astype(np.float32)
         previous_node_specs = self._get_previous_node_specs()
         inputs = [previous_node_specs.name]
 
         channels = previous_node_specs.channels
         assert channels > 0
-        upsample_params = UpsampleParams(layer_name, scales)
-        scales_name = upsample_params.generate_param_name()
+        up_sample_params = UpSampleParams(layer_name, scales)
+        scales_name = up_sample_params.generate_param_name()
         # For ONNX opset >= 9, the Upsample node takes the scales array
         # as an input.
         inputs.append(scales_name)
 
-        upsample_node = helper.make_node(
+        up_sample_node = helper.make_node(
             'Upsample',
             mode='nearest',
             inputs=inputs,
             outputs=[layer_name],
             name=layer_name,
         )
-        self._nodes.append(upsample_node)
-        self.param_dict[layer_name] = upsample_params
+        self._nodes.append(up_sample_node)
+        self.param_dict[layer_name] = up_sample_params
         return layer_name, channels
 
-    def _make_maxpool_node(self, layer_name, layer_dict):
+    def _make_max_pool_node(self, layer_name, layer_dict):
         """Create an ONNX Maxpool node with the properties from
         the DarkNet-based graph.
 
@@ -817,7 +818,7 @@ class GraphBuilderONNX(object):
         kernel_shape = [kernel_size, kernel_size]
         strides = [stride, stride]
         assert channels > 0
-        maxpool_node = helper.make_node(
+        max_pool_node = helper.make_node(
             'MaxPool',
             inputs=inputs,
             outputs=[layer_name],
@@ -826,10 +827,11 @@ class GraphBuilderONNX(object):
             auto_pad='SAME_UPPER',
             name=layer_name,
         )
-        self._nodes.append(maxpool_node)
+        self._nodes.append(max_pool_node)
         return layer_name, channels
 
-    def _make_yolo_node(self, layer_name, layer_dict):
+    @staticmethod
+    def _make_yolo_node(layer_name):
         """Create an ONNX Yolo node.
 
         These are dummy nodes which would be removed in the end.
@@ -909,17 +911,17 @@ def main():
         elif 'spp' in args.model:
             output_tensor_dims['089_convolutional'] = [c, h // 32, w // 32]
             output_tensor_dims['101_convolutional'] = [c, h // 16, w // 16]
-            output_tensor_dims['113_convolutional'] = [c, h //  8, w //  8]
+            output_tensor_dims['113_convolutional'] = [c, h // 8, w // 8]
         else:
             output_tensor_dims['082_convolutional'] = [c, h // 32, w // 32]
             output_tensor_dims['094_convolutional'] = [c, h // 16, w // 16]
-            output_tensor_dims['106_convolutional'] = [c, h //  8, w //  8]
+            output_tensor_dims['106_convolutional'] = [c, h // 8, w // 8]
     elif 'yolov4' in args.model:
         if 'tiny' in args.model:
             output_tensor_dims['030_convolutional'] = [c, h // 32, w // 32]
             output_tensor_dims['037_convolutional'] = [c, h // 16, w // 16]
         else:
-            output_tensor_dims['139_convolutional'] = [c, h //  8, w //  8]
+            output_tensor_dims['139_convolutional'] = [c, h // 8, w // 8]
             output_tensor_dims['150_convolutional'] = [c, h // 16, w // 16]
             output_tensor_dims['161_convolutional'] = [c, h // 32, w // 32]
     else:

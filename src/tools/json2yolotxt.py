@@ -17,7 +17,7 @@ import argparse
 
 
 # Convert Labelbox JSON file into YOLO-format labels ---------------------------
-def convert_labelbox_json(name, file, darknet, filter):
+def convert_labelbox_json(name, file, darknet, filters):
     # Create folders
     path = make_folders()
 
@@ -45,19 +45,19 @@ def convert_labelbox_json(name, file, darknet, filter):
     # Write *.names file
     categories = []
     for x in tqdm(data['categories'], desc='Names'):
-        if x["name"] in filter: continue
+        if x["name"] in filters: continue
         categories.append(x["name"])
         with open(name + '.names', 'a') as file:
             file.write('%s\n' % x['name'])
 
     # Write labels file
-    outputAnnot = {}
+    output_annotations = {}
     with open('out/_annotations.txt', 'a') as file:
         for x in tqdm(data['annotations'], desc='Annotations'):
             i = file_id.index(x['image_id'])  # image index
             label_name = Path(file_name[i]).stem + ('.txt' if darknet else '.jpg')
-            if i not in outputAnnot:
-                outputAnnot[i] = label_name
+            if i not in output_annotations:
+                output_annotations[i] = label_name
 
             # The Labelbox bounding box format is [top left x, top left y, width, height]
             box = np.array(x['bbox'], dtype=np.float64)
@@ -70,18 +70,20 @@ def convert_labelbox_json(name, file, darknet, filter):
                 box[3] = box[1] + box[3]
 
             if (box[2] > 0.) and (box[3] > 0.):  # if w > 0 and h > 0
-                if darknet and len(categories) > int(x['category_id'] - 1) and categories[int(x['category_id'] - 1)] not in filter:
+                if darknet and len(categories) > int(x['category_id'] - 1) and categories[
+                    int(x['category_id'] - 1)] not in filters:
                     with open(f"out/labels/{label_name}", "a") as fileDarknet:
                         fileDarknet.write('%g %.6f %.6f %.6f %.6f\n' % (x['category_id'] - 1, *box))
                 else:
-                    outputAnnot[i] += ' %d,%d,%d,%d,%g' % (*box, x['category_id'] - 1)
+                    output_annotations[i] += ' %d,%d,%d,%d,%g' % (*box, x['category_id'] - 1)
         if not darknet:
-            for line in outputAnnot.values():
+            for line in output_annotations.values():
                 file.write(line + "\n")
 
     # Split data into train, test, and validate files
     split_files(name, file_name)
     print('Done. Output saved to %s' % (os.getcwd() + os.sep + path))
+
 
 def make_folders(path='out/'):
     if os.path.exists(path):
@@ -90,6 +92,7 @@ def make_folders(path='out/'):
     os.makedirs(path + os.sep + 'labels')  # make new labels folder
     os.makedirs(path + os.sep + 'images')  # make new labels folder
     return path
+
 
 def split_files(out_path, file_name, prefix_path=''):  # split training data
     file_name = list(filter(lambda x: len(x) > 0, file_name))
@@ -114,6 +117,7 @@ def split_indices(x, train=0.9, test=0.1, validate=0.0, shuffle=True):  # split 
     k = round(n * validate) + j  # validate
     return v[:i], v[i:j], v[j:k]  # return indices
 
+
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Convert COCOJSON format to yolo txt format.")
     parser.add_argument("-name", required=True, type=str, help="file name")
@@ -123,4 +127,4 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    convert_labelbox_json(name=args.name, file=args.json, darknet=args.darknet, filter=args.filter_categories)
+    convert_labelbox_json(name=args.name, file=args.json, darknet=args.darknet, filters=args.filter_categories)

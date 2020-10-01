@@ -164,7 +164,7 @@ def main():
     args = parse_args()
     labels = np.loadtxt('googlenet/synset_words.txt', str, delimiter='\t')
     cam = Camera(args)
-    if not cam.isOpened():
+    if not cam.get_is_opened():
         raise SystemExit('ERROR: failed to open camera!')
 
     open_window(

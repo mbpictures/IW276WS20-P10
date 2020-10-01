@@ -23,12 +23,12 @@ def get_input_wh(model_name):
     if 'x' in yolo_dim:
         dim_split = yolo_dim.split('x')
         if len(dim_split) != 2:
-            raise ValueError('ERROR: bad yolo_dim (%s)!' % yolo_dim)
+            raise ValueError(f'ERROR: bad yolo_dim ({yolo_dim})!')
         w, h = int(dim_split[0]), int(dim_split[1])
     else:
         h = w = int(yolo_dim)
     if h % 32 != 0 or w % 32 != 0:
-        raise ValueError('ERROR: bad yolo_dim (%s)!' % yolo_dim)
+        raise ValueError(f'ERROR: bad yolo_dim ({yolo_dim})!')
     return w, h
 
 
@@ -37,15 +37,13 @@ def get_yolo_whs(model_name, w, h):
     if 'yolov3' in model_name:
         if 'tiny' in model_name:
             return [[w // 32, h // 32], [w // 16, h // 16]]
-        else:
-            return [[w // 32, h // 32], [w // 16, h // 16], [w // 8, h // 8]]
+        return [[w // 32, h // 32], [w // 16, h // 16], [w // 8, h // 8]]
     elif 'yolov4' in model_name:
         if 'tiny' in model_name:
             return [[w // 32, h // 32], [w // 16, h // 16]]
-        else:
-            return [[w // 8, h // 8], [w // 16, h // 16], [w // 32, h // 32]]
+        return [[w // 8, h // 8], [w // 16, h // 16], [w // 32, h // 32]]
     else:
-        raise ValueError('ERROR: unknown model (%s)!' % args.model)
+        raise ValueError(f'ERROR: unknown model ({model_name})!')
 
 
 def verify_classes(model_name, num_classes):
@@ -55,7 +53,7 @@ def verify_classes(model_name, num_classes):
         cfg_lines = f.readlines()
     classes_lines = [l.strip() for l in cfg_lines if l.startswith('classes')]
     classes = [int(l.split('=')[-1]) for l in classes_lines]
-    return all([c == num_classes for c in classes])
+    return all(c == num_classes for c in classes)
 
 
 def get_anchors(model_name):
@@ -90,9 +88,9 @@ def get_scales(model_name):
     scale_lines = [l.strip() for l in cfg_lines if l.startswith('scale_x_y')]
     if len(scale_lines) == 0:
         return [1.0] * len(yolo_lines)
-    else:
-        assert len(scale_lines) == len(yolo_lines)
-        return [float(l.split('=')[-1]) for l in scale_lines]
+
+    assert len(scale_lines) == len(yolo_lines)
+    return [float(l.split('=')[-1]) for l in scale_lines]
 
 
 def get_plugin_creator(plugin_name, logger):
@@ -119,7 +117,7 @@ def add_yolo_plugins(network, model_name, num_classes, logger):
         raise ValueError('bad number of network outputs: %d vs. %d' %
                          (network.num_outputs, len(anchors)))
     scales = get_scales(model_name)
-    if any([s < 1.0 for s in scales]):
+    if any(s < 1.0 for s in scales):
         raise ValueError('bad scale_x_y: %s' % str(scales))
 
     plugin_creator = get_plugin_creator('YoloLayer_TRT', logger)

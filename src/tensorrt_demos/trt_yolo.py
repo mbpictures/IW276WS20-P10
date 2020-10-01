@@ -4,12 +4,11 @@ This script demonstrates how to do real-time object detection with
 TensorRT optimized YOLO engine.
 """
 
-
 import os
 import time
 import argparse
 import json
-import numpy 
+import numpy
 import cv2
 
 import pycuda.autoinit  # This is needed for initializing CUDA driver
@@ -21,25 +20,20 @@ from utils.visualization import BBoxVisualization
 
 from utils.yolo_with_plugins import TrtYOLO
 
-
 WINDOW_NAME = 'TrtYOLODemo'
-ACTIVATE_DISPLAY = False
-WRITE_IMAGES = False
 validCocoJson = dict()
 resultJson = list()
-IMAGE_OUTPUT = "/home/out/images"
 
 
 class NpEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, numpy.integer):
             return int(obj)
-        elif isinstance(obj, numpy.floating):
+        if isinstance(obj, numpy.floating):
             return float(obj)
-        elif isinstance(obj, numpy.ndarray):
+        if isinstance(obj, numpy.ndarray):
             return obj.tolist()
-        else:
-            return super(NpEncoder, self).default(obj)
+        return super(NpEncoder, self).default(obj)
 
 
 def parse_args():
@@ -63,13 +57,21 @@ def parse_args():
     parser.add_argument(
         '--write_images', action="store_true",
         help='Write images with detected bounding boxes to output directory')
+    parser.add_argument("--image_output", type=str, default="/home/out/images",
+                        help="Output directory for images with bounding boxes")
+    parser.add_argument("--result_json", type=str, default="/home/out/result.json",
+                        help="Output file for annotations")
+    parser.add_argument("--confidence_threshold", type=float, default=0.3,
+                        help="Output file for annotations")
+    parser.add_argument("--activate_display", action="store_true",
+                        help="Output file for annotations")
     args = parser.parse_args()
     return args
 
 
-def process_valid_json(cocoJsonFile):
+def process_valid_json(coco_json_file):
     global validCocoJson
-    with open(cocoJsonFile, "r") as jsonFile:
+    with open(coco_json_file, "r") as jsonFile:
         data = jsonFile.read()
         result = json.loads(data)
     for image in result["images"]:
@@ -80,18 +82,18 @@ def append_coco(boxes, confidences, classes, camera):
     global resultJson
     global validCocoJson
 
-    for box, confidence, clss in zip(boxes, confidences, classes):
-        classId = int(clss)
+    for box, confidence, classes in zip(boxes, confidences, classes):
+        class_id = int(classes)
         annotation = {
-            'image_id':validCocoJson[os.path.basename(camera.currentImage)],
-            'bbox':[
+            'image_id': validCocoJson[os.path.basename(camera.currentImage)],
+            'bbox': [
                 int(box[0]),
                 int(box[1]),
                 int(box[2] - box[0]),
                 int(box[3] - box[1])
             ],
-            'score':confidence,
-            'category_id':classId
+            'score': confidence,
+            'category_id': class_id
         }
         resultJson.append(annotation)
 
@@ -106,91 +108,97 @@ def loop_and_detect(camera, trt_yolo, args, confidence_thresh, visual):
       visual: for visualization.
     """
     fps = 0.0
-    tic = time.time()
+    cumulative_frame_time = 0.0
+    iterations = 0
 
+    # endless loop when user provides single image/webcam
     while len(camera.imageNames) != 0:
-        if ACTIVATE_DISPLAY:
-            if (cv2.getWindowProperty(WINDOW_NAME, 0) < 0):
-                break
+        if args.activate_display and (cv2.getWindowProperty(WINDOW_NAME, 0) < 0):
+            break
         img = camera.read()
         if img is None:
             break
-        boxes, confs, clss = trt_yolo.detect(img, confidence_thresh)
-        if ACTIVATE_DISPLAY or args.write_images:
-            img = visual.draw_bboxes(img, boxes, confs, clss)
-            img = show_fps(img, fps)
-        if ACTIVATE_DISPLAY:
-            cv2.imshow(WINDOW_NAME, img)
+        tic = time.time()
+        boxes, confidences, classes = trt_yolo.detect(img, confidence_thresh)
         toc = time.time()
-        curr_fps = 1.0 / (toc - tic)
+        if args.activate_display or args.write_images:
+            img = visual.draw_bboxes(img, boxes, confidences, classes)
+            img = show_fps(img, fps)
+        if args.activate_display:
+            cv2.imshow(WINDOW_NAME, img)
+
+        frame_time = (toc - tic)
+        cumulative_frame_time += frame_time
+        curr_fps = 1.0 / frame_time
         # calculate an exponentially decaying average of fps number
-        fps = curr_fps if fps == 0.0 else (fps*0.95 + curr_fps*0.05)
-        tic = toc
-        if ACTIVATE_DISPLAY:
+        fps = curr_fps if fps == 0.0 else (fps * 0.95 + curr_fps * 0.05)
+        if args.activate_display:
             key = cv2.waitKey(1)
             if key == 27:  # ESC key: quit program
                 break
         if args.write_images:
-            path = os.path.join(IMAGE_OUTPUT, os.path.basename(camera.currentImage))
+            path = os.path.join(args.image_output, os.path.basename(camera.currentImage))
             print("Image path: ", path)
             cv2.imwrite(path, img)
         print("FPS: {:3.2f} and {} Images left.".format(fps, len(camera.imageNames)))
-        append_coco(boxes, confs, clss, camera)
+        append_coco(boxes, confidences, classes, camera)
 
-    
+        iterations += 1
+
     # Write coco json file when done
-    cocoFile = json.dumps(resultJson, cls=NpEncoder)
-    f = open("/home/out/result.json", "w+")
-    f.write(cocoFile)
+    coco_file = json.dumps(resultJson, cls=NpEncoder)
+    f = open(args.result_json, "w+")
+    f.write(coco_file)
     f.close()
-            
+
+    print(f"Average FPS: {(1 / (cumulative_frame_time / iterations))}")
+
 
 def main():
-    global cocoCategoryId
     args = parse_args()
     if args.category_num <= 0:
-        raise SystemExit('ERROR: bad category_num (%d)!' % args.category_num)
+        raise SystemExit(f'ERROR: bad category_num ({args.category_num})!')
     if not os.path.isfile(args.model):
-        raise SystemExit('ERROR: file %s not found!' % args.model)
+        raise SystemExit(f'ERROR: file {args.model} not found!')
 
     # Process valid coco json file
     process_valid_json(args.valid_coco)
 
     if args.write_images:
-        if not os.path.exists(IMAGE_OUTPUT): os.mkdir(IMAGE_OUTPUT)
+        if not os.path.exists(args.image_output): os.mkdir(args.image_output)
 
     # Create camera for video/image input
     cam = Camera(args)
-    if not cam.isOpened():
+    if not cam.get_is_opened():
         raise SystemExit('ERROR: failed to open camera!')
 
-    cls_dict = get_cls_dict(args.category_num)
+    class_dict = get_cls_dict(args.category_num)
     yolo_dim = (args.model.replace(".trt", "")).split('-')[-1]
     if 'x' in yolo_dim:
         dim_split = yolo_dim.split('x')
         if len(dim_split) != 2:
-            raise SystemExit('ERROR: bad yolo_dim (%s)!' % yolo_dim)
+            raise SystemExit(f'ERROR: bad yolo_dim ({yolo_dim})!')
         w, h = int(dim_split[0]), int(dim_split[1])
     else:
         h = w = int(yolo_dim)
     if h % 32 != 0 or w % 32 != 0:
-        raise SystemExit('ERROR: bad yolo_dim (%s)!' % yolo_dim)
+        raise SystemExit(f'ERROR: bad yolo_dim ({yolo_dim})!')
 
     # Create yolo
     trt_yolo = TrtYOLO(args.model, (h, w), args.category_num)
 
-    if ACTIVATE_DISPLAY:
+    if args.activate_display:
         open_window(
             WINDOW_NAME, 'Camera TensorRT YOLO Demo',
             cam.img_width, cam.img_height)
-    vis = BBoxVisualization(cls_dict)
+    visual = BBoxVisualization(class_dict)
 
     # Run detection
-    loop_and_detect(cam, trt_yolo, args, confidence_thresh=0.3, visual=vis)
+    loop_and_detect(cam, trt_yolo, args, confidence_thresh=args.confidence_threshold, visual=visual)
 
     # Clean up
     cam.release()
-    if ACTIVATE_DISPLAY:
+    if args.activate_display:
         cv2.destroyAllWindows()
 
 

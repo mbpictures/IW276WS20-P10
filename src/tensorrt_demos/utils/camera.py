@@ -14,7 +14,6 @@ import subprocess
 import numpy as np
 import cv2
 
-
 # The following flag ise used to control whether to use a GStreamer
 # pipeline to open USB webcam source.  If set to False, we just open
 # the webcam using cv2.VideoCapture(index) machinery. i.e. relying
@@ -82,8 +81,8 @@ def open_cam_usb(dev, width, height):
                    'video/x-raw, width=(int){}, height=(int){} ! '
                    'videoconvert ! appsink').format(dev, width, height)
         return cv2.VideoCapture(gst_str, cv2.CAP_GSTREAMER)
-    else:
-        return cv2.VideoCapture(dev)
+
+    return cv2.VideoCapture(dev)
 
 
 def open_cam_onboard(width, height):
@@ -122,7 +121,6 @@ def grab_img(cam):
     while cam.thread_running:
         _, cam.img_handle = cam.cap.read()
         if cam.img_handle is None:
-            #logging.warning('Camera: cap.read() returns None...')
             break
     cam.thread_running = False
 
@@ -160,7 +158,7 @@ class Camera():
             raise RuntimeError('camera is already opened!')
         a = self.args
         if a.image:
-            logging.info('Camera: using a image file %s' % a.image)
+            logging.info(f'Camera: using a image file {a.image}')
             self.cap = 'image'
             self.img_handle = cv2.imread(a.image)
             self.imageNames.append(a.image)
@@ -174,21 +172,21 @@ class Camera():
             if not os.path.exists(a.imageDir):
                 raise ValueError("Image dir path does not exist!")
             for image in os.listdir(a.imageDir):
-                fullImagePath = os.path.join(a.imageDir, image)
-                self.imageNames.append(fullImagePath)
+                full_image_path = os.path.join(a.imageDir, image)
+                self.imageNames.append(full_image_path)
             self.cap = 'images'
             self.is_opened = True
         elif a.video:
-            logging.info('Camera: using a video file %s' % a.video)
+            logging.info(f'Camera: using a video file {a.video}')
             self.video_file = a.video
             self.cap = cv2.VideoCapture(a.video)
             self._start()
         elif a.rtsp:
-            logging.info('Camera: using RTSP stream %s' % a.rtsp)
+            logging.info(f'Camera: using RTSP stream {a.rtsp}')
             self.cap = open_cam_rtsp(a.rtsp, a.width, a.height, a.rtsp_latency)
             self._start()
         elif a.usb is not None:
-            logging.info('Camera: using USB webcam /dev/video%d' % a.usb)
+            logging.info(f'Camera: using USB webcam /dev/video{a.usb}')
             self.cap = open_cam_usb(a.usb, a.width, a.height)
             self._start()
         elif a.onboard is not None:
@@ -198,11 +196,11 @@ class Camera():
         else:
             raise RuntimeError('no camera type specified!')
 
-    def isOpened(self):
+    def get_is_opened(self):
         return self.is_opened
 
     def _start(self):
-        if not self.cap.isOpened():
+        if not self.cap.get_is_opened():
             logging.warning('Camera: starting while cap is not opened!')
             return
 
@@ -229,7 +227,6 @@ class Camera():
     def _stop(self):
         if self.thread_running:
             self.thread_running = False
-            #self.thread.join()
 
     def read(self):
         """Read a frame from the camera object.
@@ -250,10 +247,10 @@ class Camera():
             if img is not None and self.do_resize:
                 img = cv2.resize(img, (self.img_width, self.img_height))
             return img
-        elif self.cap == 'image':
+        if self.cap == 'image':
             self.currentImage = self.args.image
             return np.copy(self.img_handle)
-        elif self.cap == 'images':
+        if self.cap == 'images':
             if len(self.imageNames) != 0:
                 img = self.imageNames.pop()
                 self.img_handle = cv2.imread(img)
@@ -265,13 +262,11 @@ class Camera():
                     self.img_height, self.img_width, _ = self.img_handle.shape
                     return np.copy(self.img_handle)
             return None
-            
-        else:
-            if self.copy_frame:
-                return self.img_handle.copy()
-            else:
-                return self.img_handle
 
+        if self.copy_frame:
+            return self.img_handle.copy()
+
+        return self.img_handle
 
     def release(self):
         self._stop()
