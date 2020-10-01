@@ -79,7 +79,7 @@ sudo python3 build_docker.py
 sudo python3 start_docker.py --input "Directory where the images to detect are stored" --output "Directory where the output is stored" --image "name and tag of the docker container to run" --valid-json "Path to the valid json file" [--tiny] [--write_images]
 ```
 ### Python
-To run the prediction without docker, please execute the following commands.
+To run the prediction without docker, please install the prerequisites described [here](https://github.com/jkjung-avt/tensorrt_demos#demo-5-yolov4) (step 1-3) and execute the following commands.
 ```bash
 cd src/tensorrt_demos/yolo
 ```
