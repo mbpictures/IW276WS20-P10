@@ -44,22 +44,32 @@ custom-yolov4-tiny-detector_final-416x416.trt:
 custom-yolov4-detector_final-416x416.trt:
 * Is a full-fledged YoloV4 model. It is slower than the tiny model, but provides more accurate results in terms of both confidence and bounding box dimensions.
 To unzip the file execute the following commands.
-> cd pretrained-models/
-
-> sudo dtrx custom-yolov4-detector_final-416x416.zip -v -n -f
+```bash
+cd pretrained-models/
+```
+```bash
+sudo dtrx custom-yolov4-detector_final-416x416.zip -v -n -f
+```
 
 Note that this step is not required for building the docker image. Docker will unzip this file itself.
 
 ## Running
 ### Docker
 1. Clone the repository
-> git clone https://github.com/IW276/IW276WS20-P10.git
+```bash
+git clone https://github.com/IW276/IW276WS20-P10.git
+```
 2. Build the docker image
-> cd IW276WS20-P10/
-
-> sudo python3 build_docker.py
+```bash
+cd IW276WS20-P10/
+```
+```bash
+sudo python3 build_docker.py
+```
 3. Start the docker container (run "python3 start_docker.py -h" for help)
-> sudo python3 start_docker.py --input "Directory where the images to detect are stored" --output "Directory where the output is stored" --image "name and tag of the docker container to run" --valid-json "Path to the valid json file" [--tiny] [--write_images]
+```bash
+sudo python3 start_docker.py --input "Directory where the images to detect are stored" --output "Directory where the output is stored" --image "name and tag of the docker container to run" --valid-json "Path to the valid json file" [--tiny] [--write_images]
+```
 ### Python
 To run the prediction without docker, please execute the following commands.
 ```bash
