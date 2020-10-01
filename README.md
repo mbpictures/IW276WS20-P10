@@ -1,6 +1,7 @@
-# Project-Template for IW276 Autonome Systeme Labor
+# Person Detection Challenge
 
-Short introduction to project assigment.
+With the increasing number of CCTV in public spaces it is of interest to provide automatic analysis solutions in terms of e.g. image detection to provide safety precautions which fulfill both privacy damands and reliable results.
+This solution utilizes a python tensorRT pipeline to analyze the video signal of a camera (a series of pictures) on a nvidia jetson nano embedded device and focuses on detecting large numbers of people.
 
 <p align="center">
   Screenshot / GIF <br />
@@ -18,11 +19,14 @@ Short introduction to project assigment.
 * [Acknowledgments](#acknowledgments)
 
 ## Requirements
+### Required
 * Python 3.6 (or above)
 * OpenCV 4.1 (or above)
 * Jetson Nano
 * Jetpack 4.4
-> [Optional] ...
+### Optional
+* Docker
+* dtrx
 
 ## Prerequisites
 1. Install requirements:
@@ -32,9 +36,22 @@ pip install -r requirements.txt
 
 ## Pre-trained models <a name="pre-trained-models"/>
 
-Pre-trained model is available at pretrained-models/
+Two pre-trained models are available at pretrained-models/ :
+
+custom-yolov4-tiny-detector_final-416x416.trt:
+* Is a slimmed-down YoloV4 model in tensorRT format. It it way light weighter and faster than the YoloV4 model at the cost of detection accuracy.
+
+custom-yolov4-detector_final-416x416.trt:
+* Is a full-fledged YoloV4 model. It is slower than the tiny model, but provides more accurate results in terms of both confidence and bounding box dimensions.
+To unzip the file execute the following commands.
+> cd pretrained-models/
+
+> sudo dtrx custom-yolov4-detector_final-416x416.zip -v -n -f
+
+Note that this step is not required for building the docker image. Docker will unzip this file itself.
 
 ## Running
+### Docker
 1. Clone the repository
 > git clone https://github.com/IW276/IW276WS20-P10.git
 2. Build the docker image
@@ -43,10 +60,8 @@ Pre-trained model is available at pretrained-models/
 > sudo python3 build_docker.py
 3. Start the docker container (run "python3 start_docker.py -h" for help)
 > sudo python3 start_docker.py --input "Directory where the images to detect are stored" --output "Directory where the output is stored" --image "name and tag of the docker container to run" --valid-json "Path to the valid json file" [--tiny] [--write_images]
-
-
-## Docker
-HOW TO
+### Python
+TODO
 
 ## Acknowledgments
 
