@@ -32,8 +32,11 @@ TODO: Insert Link to Demo Video
 
 ## Prerequisites
 1. Install requirements:
+```bash
+pip install -r src/tools/requirements.txt
 ```
-pip install -r requirements.txt
+```bash
+pip install -r src/tensorrt_demos/requirements.txt
 ```
 
 ## Pre-trained models <a name="pre-trained-models"/>
