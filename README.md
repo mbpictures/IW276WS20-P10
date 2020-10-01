@@ -4,9 +4,11 @@ With the increasing number of CCTV in public spaces it is of interest to provide
 This solution utilizes a python tensorRT pipeline to analyze the video signal of a camera (a series of pictures) on a nvidia jetson nano embedded device and focuses on detecting large numbers of people.
 
 <p align="center">
-  Screenshot / GIF <br />
-  Link to Demo Video
+  <img src="doc/img/undetected.gif" width="861" />
+  <img src="doc/img/detected.gif" width="861" />
+  
 </p>
+TODO: Insert Link to Demo Video
 
 > This work was done by Marius Butz, Tim Hänlein and Valeria Zitz during the IW276 Autonome Systeme Labor at the Karlsruhe University of Applied Sciences (Hochschule Karlruhe - Technik und Wirtschaft) in WS 2020 / 2021. 
 
