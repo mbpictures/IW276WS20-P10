@@ -6,9 +6,10 @@ This solution utilizes a python tensorRT pipeline to analyze the video signal of
 <p align="center">
   <img src="doc/img/undetected.gif" width="861" />
   <img src="doc/img/detected.gif" width="861" />
-  
 </p>
-TODO: Insert Link to Demo Video
+
+[![IW276WS20-P10](https://i.ibb.co/xS8xF9J/Screenshot-2020-10-02-113355.png)](https://youtu.be/IistoiX3bUA "IW276WS20-P10")
+<p align="center">↑ Klick on the picture above to watch the demo video ↑</p>
 
 > This work was done by Marius Butz, Tim Hänlein and Valeria Zitz during the IW276 Autonome Systeme Labor at the Karlsruhe University of Applied Sciences (Hochschule Karlruhe - Technik und Wirtschaft) in WS 2020 / 2021. 
 
