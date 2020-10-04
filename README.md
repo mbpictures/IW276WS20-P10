@@ -1,11 +1,15 @@
-# Project-Template for IW276 Autonome Systeme Labor
+# Person Detection Challenge
 
-Short introduction to project assigment.
+With the increasing number of CCTV in public spaces it is of interest to provide automatic analysis solutions in terms of e.g. image detection to provide safety precautions which fulfill both privacy damands and reliable results.
+This solution utilizes a python tensorRT pipeline to analyze the video signal of a camera (a series of pictures) on a nvidia jetson nano embedded device and focuses on detecting large numbers of people.
 
 <p align="center">
-  Screenshot / GIF <br />
-  Link to Demo Video
+  <img src="doc/img/undetected.gif" width="861" />
+  <img src="doc/img/detected.gif" width="861" />
 </p>
+
+[![IW276WS20-P10](https://i.ibb.co/xS8xF9J/Screenshot-2020-10-02-113355.png)](https://youtu.be/IistoiX3bUA "IW276WS20-P10")
+<p align="center">↑ Klick on the picture above to watch the demo video ↑</p>
 
 > This work was done by Marius Butz, Tim Hänlein and Valeria Zitz during the IW276 Autonome Systeme Labor at the Karlsruhe University of Applied Sciences (Hochschule Karlruhe - Technik und Wirtschaft) in WS 2020 / 2021. 
 
@@ -18,35 +22,72 @@ Short introduction to project assigment.
 * [Acknowledgments](#acknowledgments)
 
 ## Requirements
+### Required
 * Python 3.6 (or above)
 * OpenCV 4.1 (or above)
 * Jetson Nano
 * Jetpack 4.4
-> [Optional] ...
+* make
+* cmake
+* g++
+### Optional
+* Docker
+* dtrx
 
 ## Prerequisites
 1. Install requirements:
+```bash
+pip install -r src/tools/requirements.txt
 ```
-pip install -r requirements.txt
+```bash
+pip install -r src/tensorrt_demos/requirements.txt
 ```
 
 ## Pre-trained models <a name="pre-trained-models"/>
 
-Pre-trained model is available at pretrained-models/
+Two pre-trained models are available at pretrained-models/ :
+
+custom-yolov4-tiny-detector_final-416x416.trt:
+* Is a slimmed-down YoloV4 model in tensorRT format. It it way light weighter and faster than the YoloV4 model at the cost of detection accuracy.
+
+custom-yolov4-detector_final-416x416.trt:
+* Is a full-fledged YoloV4 model. It is slower than the tiny model, but provides more accurate results in terms of both confidence and bounding box dimensions.
+To unzip the file execute the following commands.
+```bash
+cd pretrained-models/
+```
+```bash
+sudo dtrx custom-yolov4-detector_final-416x416.zip -v -n -f
+```
+
+Note that this step is not required for building the docker image. Docker will unzip this file itself.
 
 ## Running
+### Docker
 1. Clone the repository
-> git clone https://github.com/IW276/IW276WS20-P10.git
+```bash
+git clone https://github.com/IW276/IW276WS20-P10.git
+```
 2. Build the docker image
-> cd IW276WS20-P10/
-
-> sudo python3 build_docker.py
+```bash
+cd IW276WS20-P10/
+```
+```bash
+sudo python3 build_docker.py
+```
 3. Start the docker container (run "python3 start_docker.py -h" for help)
-> sudo python3 start_docker.py --input "Directory where the images to detect are stored" --output "Directory where the output is stored" --image "name and tag of the docker container to run" --valid-json "Path to the valid json file" [--tiny] [--write_images]
+```bash
+sudo python3 start_docker.py --input "Directory where the images to detect are stored" --output "Directory where the output is stored" --image "name and tag of the docker container to run" --valid-json "Path to the valid json file" [--tiny] [--write_images]
+```
+### Python
+To run the prediction without docker, please install the prerequisites described [here](https://github.com/jkjung-avt/tensorrt_demos#demo-5-yolov4) (step 1-3) and execute the following commands.
+```bash
+cd src/tensorrt_demos/yolo
+```
+```bash
+sudo python3 trt_yolo.py --imageDir "directory containing images" -v "path to ground truth coco json" -m "path to tensorrt model" [--write_images] [--image_output "directory where the images with bounding boxes should be stored (only when --write_images is enabled)" Default: "/home/out/images"] [--result_json "path to the json, which contains all detected annotations" Default: "/home/out/result.json"] [--confidence_threshhold Default: 0.3] [--activate_display]
+```
 
-
-## Docker
-HOW TO
 
 ## Acknowledgments
 
